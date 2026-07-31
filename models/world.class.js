@@ -23,15 +23,31 @@ class World {
 
     checkCollisions() {
         setInterval(() => {
-            this.level.enemies.forEach((enemy) => {
-                if (this.character.isColliding(enemy) && !this.character.isHurt()) {
-                    this.character.hit();
-                    this.statusBar.setPercentage(this.character.energy);
-                }
-            })
+            this.level.enemies.forEach((enemy) => this.checkEnemyCollision(enemy));
+        }, 1000 / 60);
 
+        setInterval(() => {
             this.checkThrowObjects();
         }, 100);
+    }
+
+    checkEnemyCollision(enemy) {
+        if (enemy instanceof Chicken && !enemy.isDead() && this.character.isJumpingOn(enemy)) {
+            this.killChicken(enemy);
+        } else if (!enemy.isDead() && this.character.isColliding(enemy) && !this.character.isHurt()) {
+            this.character.hit();
+            this.statusBar.setPercentage(this.character.energy);
+        }
+    }
+
+    killChicken(chicken) {
+        chicken.die();
+        this.character.jump();
+        setTimeout(() => this.removeEnemy(chicken), 3000);
+    }
+
+    removeEnemy(enemy) {
+        this.level.enemies = this.level.enemies.filter((currentEnemy) => currentEnemy !== enemy);
     }
 
     checkThrowObjects() {
