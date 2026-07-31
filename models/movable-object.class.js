@@ -3,13 +3,14 @@ class MovableObject extends DrawableObject {
     speedY = 0;
     acceleration = 0.5;
     otherDirection = false;
+    isFrozen = false;
 
     energy = 100;
     lastHit = 0;
 
     applyGravity() {
         setInterval(() => {
-            if (this.isAboveGround() || this.speedY > 0) {
+            if (!this.isFrozen && (this.isAboveGround() || this.speedY > 0)) {
                 this.y -= this.speedY;
                 this.speedY -= this.acceleration;
             }
@@ -17,8 +18,8 @@ class MovableObject extends DrawableObject {
     }
 
     isAboveGround() {
-        if(this instanceof ThrowableObject) {
-            return true;
+        if (this instanceof ThrowableObject) {
+            return !this.hasHitEnemy && this.y < this.groundY;
         }
         return this.y < 180;
     }
@@ -37,7 +38,7 @@ class MovableObject extends DrawableObject {
     }
 
     hit() {
-        this.energy -= 10;
+        this.energy -= 20;
         if (this.energy <= 0) {
             this.energy = 0;
         } else {
@@ -49,7 +50,7 @@ class MovableObject extends DrawableObject {
     isHurt() {
         let timepassed = new Date().getTime() - this.lastHit;
         timepassed = timepassed / 1000;
-        return timepassed < 0.5;
+        return timepassed < 1;
     }
 
     isDead() {
@@ -57,14 +58,15 @@ class MovableObject extends DrawableObject {
     }
 
     moveRight() {
-        this.x += this.speed;
+        if (!this.isFrozen) this.x += this.speed;
     }
 
     moveLeft() {
-        this.x -= this.speed;
+        if (!this.isFrozen) this.x -= this.speed;
     };
 
     playAnimation(images) {
+        if (this.isFrozen) return;
         let i = this.currentImage % images.length;
         let path = images[i];
         this.img = this.imageCache[path];
@@ -72,6 +74,11 @@ class MovableObject extends DrawableObject {
     }
 
     jump() {
-        this.speedY = 11;
+        if (!this.isFrozen) this.speedY = 11;
+    }
+
+    freeze() {
+        this.isFrozen = true;
+        this.speedY = 0;
     }
 }

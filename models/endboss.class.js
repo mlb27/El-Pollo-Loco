@@ -12,11 +12,14 @@ class Endboss extends MovableObject {
 
     ]
 
+    spawnSound = new Audio('audio/endboss-spawn.mp3');
+    spawnSoundPlayed = false;
+
     constructor() {
         super();
         this.loadImage(this.IMAGES_WALKING[0]);
         this.loadImages(this.IMAGES_WALKING);
-        this.x = 2500;
+        this.x = 2200;
         this.y = 55;
         this.width = 250;
         this.height = 400;
@@ -28,6 +31,13 @@ class Endboss extends MovableObject {
         setInterval(() => {
             this.playAnimation(this.IMAGES_WALKING)
         }, 200);
+    }
+
+    playSpawnSound() {
+        if (!this.spawnSoundPlayed) {
+            this.spawnSoundPlayed = true;
+            this.spawnSound.play();
+        }
     }
 
 }
