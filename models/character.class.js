@@ -58,6 +58,8 @@ class Character extends MovableObject {
     stompProtectionActive = false;
     stompProtectionTimeout;
     deathAnimationStarted = false;
+    collectedBottles = 0;
+    maxBottles = 5;
 
     constructor() {
         super().loadImage("img/2_character_pepe/2_walk/W-21.png");
@@ -73,13 +75,37 @@ class Character extends MovableObject {
     hit() {
         if (this.isDead()) return;
         super.hit();
-        audioManager.playSound('characterHit');
+        this.playCurrentHitSound();
         if (this.isDead()) this.handleDeath();
-        else audioManager.playSound('characterOugh');
+        else audioManager.playSound('stompSplash');
+    }
+
+    playCurrentHitSound() {
+        const hitNumber = (100 - this.energy) / 20;
+        if (hitNumber <= 4) audioManager.playSound(`characterHit${hitNumber}`);
+    }
+
+    canCollectBottle() {
+        return this.collectedBottles < this.maxBottles;
+    }
+
+    collectBottle() {
+        if (this.canCollectBottle()) this.collectedBottles++;
+    }
+
+    hasBottle() {
+        return this.collectedBottles > 0;
+    }
+
+    useBottle() {
+        if (this.hasBottle()) this.collectedBottles--;
+    }
+
+    getBottlePercentage() {
+        return this.collectedBottles / this.maxBottles * 100;
     }
 
     handleDeath() {
-        audioManager.stopSound('characterOugh');
         audioManager.playSound('characterDied');
         this.startDeathAnimation();
         this.world.startGameOver();

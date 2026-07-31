@@ -6,6 +6,7 @@ class World {
     keyboard;
     camera_x = 0;
     healthBar = new HealthBar();
+    bottleBar = new BottleBar();
     throwableObjects = [];
     lastBottleThrow = 0;
     bottleThrowCooldown = 1000;
@@ -32,16 +33,16 @@ class World {
     }
 
     checkCollisions() {
-        this.collisionInterval = setInterval(() => {
-            this.level.enemies.forEach((enemy) => this.checkEnemyCollision(enemy));
-            this.checkBottleCollisions();
-            this.removeExpiredBottles();
-            this.checkEndbossVisibility();
-        }, 1000 / 60);
+        this.collisionInterval = setInterval(() => this.runCollisionChecks(), 1000 / 60);
+        this.bottleThrowInterval = setInterval(() => this.checkThrowObjects(), 100);
+    }
 
-        this.bottleThrowInterval = setInterval(() => {
-            this.checkThrowObjects();
-        }, 100);
+    runCollisionChecks() {
+        this.level.enemies.forEach((enemy) => this.checkEnemyCollision(enemy));
+        this.checkBottlePickups();
+        this.checkBottleCollisions();
+        this.removeExpiredBottles();
+        this.checkEndbossVisibility();
     }
 
     startGameOver() {
@@ -124,12 +125,35 @@ class World {
         this.throwableObjects = this.throwableObjects.filter((bottle) => !bottle.isExpired);
     }
 
+    checkBottlePickups() {
+        this.level.bottles.forEach((bottle) => {
+            if (this.canCollectBottle(bottle)) this.collectBottle(bottle);
+        });
+    }
+
+    canCollectBottle(bottle) {
+        return this.character.canCollectBottle() && this.character.isColliding(bottle);
+    }
+
+    collectBottle(bottle) {
+        this.character.collectBottle();
+        audioManager.playSound('bottlePickup');
+        this.level.bottles = this.level.bottles.filter((item) => item !== bottle);
+        this.updateBottleBar();
+    }
+
+    updateBottleBar() {
+        this.bottleBar.setPercentage(this.character.getBottlePercentage());
+    }
+
     checkThrowObjects() {
         if (this.keyboard.D && this.canThrowBottle()) {
             let bottle = new ThrowableObject(
                 this.getBottleStartX(), this.character.y + 100, this.character.otherDirection
             );
             this.throwableObjects.push(bottle);
+            this.character.useBottle();
+            this.updateBottleBar();
             this.lastBottleThrow = new Date().getTime();
         }
     }
@@ -143,7 +167,7 @@ class World {
 
     canThrowBottle() {
         const timeSinceLastThrow = new Date().getTime() - this.lastBottleThrow;
-        return timeSinceLastThrow >= this.bottleThrowCooldown;
+        return this.character.hasBottle() && timeSinceLastThrow >= this.bottleThrowCooldown;
     }
 
     draw() {
@@ -156,6 +180,7 @@ class World {
     drawWorld() {
         this.ctx.translate(this.camera_x, 0);
         this.addObjectsToMap(this.level.backgroundObjects);
+        this.addObjectsToMap(this.level.bottles);
         this.addToMap(this.character)
         this.addObjectsToMap(this.level.clouds);
         this.addObjectsToMap(this.level.enemies);
@@ -165,6 +190,7 @@ class World {
 
     drawInterface() {
         this.addToMap(this.healthBar)
+        this.addToMap(this.bottleBar)
         if (this.gameOverScreenVisible) this.drawGameOverScreen();
     }
 

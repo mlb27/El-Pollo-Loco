@@ -1,5 +1,6 @@
 const level1Endboss = new Endboss();
 const level1Chickens = createChickens(5, level1Endboss.x);
+const level1Bottles = createBottles(15, level1Endboss.x);
 
 const level1 = new Level(
     [
@@ -38,6 +39,7 @@ const level1 = new Level(
         new BackgroundObject('img/5_background/layers/2_second_layer/2.png', 2160),
         new BackgroundObject('img/5_background/layers/1_first_layer/2.png', 2160)
     ],
+    level1Bottles
 );
 
 function createChickens(amount, endbossX) {
@@ -70,4 +72,26 @@ function getReservedChickenSpace(startIndex, amount) {
 
 function getMinimumChickenGap(currentIndex) {
     return (currentIndex + 1) % 2 === 0 ? 400 : 150;
+}
+
+function createBottles(amount, endbossX) {
+    const bottles = [];
+    const lastSpawnX = endbossX - 200;
+    let nextX = 250 + Math.random() * 100;
+    for (let i = 0; i < amount; i++) {
+        bottles.push(new Bottle(nextX));
+        const remainingBottles = amount - i - 1;
+        if (remainingBottles > 0) {
+            nextX = getNextBottleX(nextX, remainingBottles, lastSpawnX);
+        }
+    }
+    return bottles;
+}
+
+function getNextBottleX(currentX, remainingBottles, lastSpawnX) {
+    const minimumGap = 100;
+    const reservedSpace = (remainingBottles - 1) * minimumGap;
+    const availableGap = lastSpawnX - currentX - reservedSpace;
+    const maximumGap = Math.min(180, availableGap);
+    return currentX + minimumGap + Math.random() * (maximumGap - minimumGap);
 }
