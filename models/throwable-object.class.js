@@ -20,9 +20,6 @@ class ThrowableObject extends MovableObject {
         'img/6_salsa_bottle/2_salsa_bottle_on_ground.png'
     ];
 
-    throwSound = new Audio('audio/bottle-throw.mp3');
-    hitSound = new Audio('audio/bottle-hit.mp3');
-    landSound = new Audio('audio/bottle-land.mp3');
     speedX = 15;
     groundY = 370;
     hasHitGround = false;
@@ -34,7 +31,6 @@ class ThrowableObject extends MovableObject {
         super().loadImage('img/6_salsa_bottle/bottle_rotation/1_bottle_rotation.png');
         this.setBottleProperties(x, y, otherDirection);
         this.loadBottleImages();
-        this.setSoundState();
         this.throw();
         this.animate();
     }
@@ -54,16 +50,10 @@ class ThrowableObject extends MovableObject {
         this.loadImages(this.IMAGES_GROUND);
     }
 
-    setSoundState() {
-        this.throwSound.muted = !soundEnabled;
-        this.hitSound.muted = !soundEnabled;
-        this.landSound.muted = !soundEnabled;
-    }
-
     throw() {
         this.speedY = 5;
         this.applyGravity();
-        this.playThrowSound();
+        audioManager.playSound('bottleThrow');
         this.movementInterval = setInterval(() => {
             this.moveBottle();
         }, 25);
@@ -75,11 +65,6 @@ class ThrowableObject extends MovableObject {
                 this.playAnimation(this.IMAGES_ROTATION);
             }
         }, 100);
-    }
-
-    playThrowSound() {
-        this.throwSound.currentTime = 0;
-        this.throwSound.play();
     }
 
     moveBottle() {
@@ -99,7 +84,7 @@ class ThrowableObject extends MovableObject {
         this.hasHitGround = true;
         this.speedY = 3;
         this.speedX = this.otherDirection ? -5 : 5;
-        this.playLandSound();
+        audioManager.playSound('bottleLand');
     }
 
     landOnGround() {
@@ -130,7 +115,7 @@ class ThrowableObject extends MovableObject {
         this.hasHitEnemy = true;
         this.speedY = 0;
         this.stopBottle();
-        this.playHitSound();
+        audioManager.playSound('bottleHit');
         this.enlargeSplash();
         this.startSplashAnimation();
     }
@@ -160,16 +145,6 @@ class ThrowableObject extends MovableObject {
             clearInterval(this.animationInterval);
             this.isExpired = true;
         }
-    }
-
-    playHitSound() {
-        this.hitSound.currentTime = 0;
-        this.hitSound.play();
-    }
-
-    playLandSound() {
-        this.landSound.currentTime = 0;
-        this.landSound.play();
     }
 
     stopBottle() {

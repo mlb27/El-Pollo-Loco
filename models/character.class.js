@@ -55,10 +55,6 @@ class Character extends MovableObject {
     ];
 
     world;
-    jumpSound = new Audio('audio/character-jump.mp3');
-    hitSound = new Audio('audio/character-hit.mp3');
-    oughSound = new Audio('audio/character-ough.mp3');
-    diedSound = new Audio('audio/character-died.mp3');
     stompProtectionActive = false;
     stompProtectionTimeout;
     deathAnimationStarted = false;
@@ -77,36 +73,16 @@ class Character extends MovableObject {
     hit() {
         if (this.isDead()) return;
         super.hit();
-        this.playHitSound();
+        audioManager.playSound('characterHit');
         if (this.isDead()) this.handleDeath();
-        else this.playOughSound();
-    }
-
-    playHitSound() {
-        this.hitSound.currentTime = 0;
-        this.hitSound.play();
-    }
-
-    playOughSound() {
-        this.oughSound.currentTime = 0;
-        this.oughSound.play();
+        else audioManager.playSound('characterOugh');
     }
 
     handleDeath() {
-        this.stopOughSound();
-        this.playDiedSound();
+        audioManager.stopSound('characterOugh');
+        audioManager.playSound('characterDied');
         this.startDeathAnimation();
         this.world.startGameOver();
-    }
-
-    stopOughSound() {
-        this.oughSound.pause();
-        this.oughSound.currentTime = 0;
-    }
-
-    playDiedSound() {
-        this.diedSound.currentTime = 0;
-        this.diedSound.play();
     }
 
     startDeathAnimation() {
@@ -163,8 +139,7 @@ class Character extends MovableObject {
     jumpIfPossible() {
         if (this.world.keyboard.SPACE && !this.isAboveGround()) {
             this.jump();
-            this.jumpSound.currentTime = 0;
-            this.jumpSound.play();
+            audioManager.playSound('characterJump');
         }
     }
 

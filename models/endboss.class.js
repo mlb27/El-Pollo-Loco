@@ -12,7 +12,6 @@ class Endboss extends MovableObject {
 
     ]
 
-    spawnSound = new Audio('audio/endboss-spawn.mp3');
     spawnSoundPlayed = false;
 
     constructor() {
@@ -36,7 +35,7 @@ class Endboss extends MovableObject {
     playSpawnSound() {
         if (!this.spawnSoundPlayed) {
             this.spawnSoundPlayed = true;
-            this.spawnSound.play();
+            audioManager.playSound('endbossSpawn');
         }
     }
 

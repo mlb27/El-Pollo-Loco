@@ -12,7 +12,6 @@ class World {
     gameOver = false;
     gameOverScreenVisible = false;
     gameOverImage = new Image();
-    gameOverSound = new Audio('audio/game-youlose.mp3');
 
     constructor(canvas, keyboard) {
         this.ctx = canvas.getContext("2d");
@@ -48,7 +47,7 @@ class World {
     startGameOver() {
         if (this.gameOver) return;
         this.gameOver = true;
-        pauseBackgroundMusic();
+        audioManager.pauseBackgroundMusic();
         this.freezeGame();
         setTimeout(() => this.showGameOverScreen(), 1000);
     }
@@ -63,8 +62,7 @@ class World {
 
     showGameOverScreen() {
         this.gameOverScreenVisible = true;
-        this.gameOverSound.currentTime = 0;
-        this.gameOverSound.play();
+        audioManager.playSound('gameOver');
     }
 
     checkEndbossVisibility() {
@@ -91,7 +89,7 @@ class World {
 
     stompChicken(chicken) {
         this.killChicken(chicken);
-        chicken.playStompSound();
+        audioManager.playSound('stompSplash');
         this.character.bounceAfterStomp();
     }
 

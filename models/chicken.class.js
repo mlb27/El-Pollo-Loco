@@ -13,8 +13,6 @@ class Chicken extends MovableObject {
         this.IMAGES_DEAD = [
             "img/3_enemies_chicken/chicken_normal/2_dead/dead.png"
         ];
-        this.hitSound = new Audio('audio/chicken-hit.mp3');
-        this.stompSplashSound = new Audio('audio/stomp-splash.mp3');
         this.loadImage("img/3_enemies_chicken/chicken_normal/1_walk/1_w.png");
         this.loadImages(this.IMAGES_WALKING);
         this.loadImages(this.IMAGES_DEAD);
@@ -39,12 +37,6 @@ class Chicken extends MovableObject {
         clearInterval(this.movementInterval);
         clearInterval(this.animationInterval);
         this.img = this.imageCache[this.IMAGES_DEAD[0]];
-        this.hitSound.currentTime = 0;
-        this.hitSound.play();
-    }
-
-    playStompSound() {
-        this.stompSplashSound.currentTime = 0;
-        this.stompSplashSound.play();
+        audioManager.playSound('chickenHit');
     }
 }
