@@ -5,7 +5,7 @@ class World {
     ctx;
     keyboard;
     camera_x = 0;
-    statusBar = new StatusBar();
+    healthBar = new HealthBar();
     throwableObjects = [];
     lastBottleThrow = 0;
     bottleThrowCooldown = 1000;
@@ -85,7 +85,7 @@ class World {
         } else if (!enemy.isDead() && this.character.isColliding(enemy) &&
             !this.character.isHurt() && !this.character.stompProtectionActive) {
             this.character.hit();
-            this.statusBar.setPercentage(this.character.energy);
+            this.healthBar.setPercentage(this.character.energy);
         }
     }
 
@@ -166,7 +166,7 @@ class World {
     }
 
     drawInterface() {
-        this.addToMap(this.statusBar)
+        this.addToMap(this.healthBar)
         if (this.gameOverScreenVisible) this.drawGameOverScreen();
     }
 
