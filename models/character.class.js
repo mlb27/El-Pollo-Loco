@@ -15,10 +15,6 @@ class Character extends MovableObject {
         'img/2_character_pepe/1_idle/idle/I-8.png',
         'img/2_character_pepe/1_idle/idle/I-9.png',
         'img/2_character_pepe/1_idle/idle/I-10.png',
-        // 'test/idle-1.png',
-        // 'test/idle-2.png',
-        // 'test/idle-3.png',
-        // 'test/idle-4.png',
     ]
 
     IMAGES_WALKING = [
