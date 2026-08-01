@@ -60,6 +60,10 @@ class Character extends MovableObject {
     deathAnimationStarted = false;
     collectedBottles = 0;
     maxBottles = 5;
+    jumpSoundIndex = 0;
+    isKnockedBack = false;
+    knockbackDirection = 0;
+    knockbackTimeout;
 
     constructor() {
         super().loadImage("img/2_character_pepe/2_walk/W-21.png");
@@ -76,8 +80,8 @@ class Character extends MovableObject {
         if (this.isDead()) return;
         super.hit();
         this.playCurrentHitSound();
+        audioManager.playSound('characterHit');
         if (this.isDead()) this.handleDeath();
-        else audioManager.playSound('stompSplash');
     }
 
     playCurrentHitSound() {
@@ -146,9 +150,30 @@ class Character extends MovableObject {
 
     moveCharacter() {
         if (this.isFrozen) return;
-        this.moveHorizontally();
-        this.jumpIfPossible();
+        if (this.isKnockedBack) this.moveKnockback();
+        else {
+            this.moveHorizontally();
+            this.jumpIfPossible();
+        }
         this.world.camera_x = -this.x + 100;
+    }
+
+    knockBackFrom(enemy) {
+        clearTimeout(this.knockbackTimeout);
+        this.isKnockedBack = true;
+        this.knockbackDirection = this.x < enemy.x ? -1 : 1;
+        this.speedY = 5;
+        this.knockbackTimeout = setTimeout(() => this.stopKnockback(), 500);
+    }
+
+    moveKnockback() {
+        this.x += this.knockbackDirection;
+        this.x = Math.max(0, Math.min(this.x, this.world.level.level_end_x));
+    }
+
+    stopKnockback() {
+        this.isKnockedBack = false;
+        this.knockbackDirection = 0;
     }
 
     moveHorizontally() {
@@ -165,8 +190,14 @@ class Character extends MovableObject {
     jumpIfPossible() {
         if (this.world.keyboard.SPACE && !this.isAboveGround()) {
             this.jump();
-            audioManager.playSound('characterJump');
+            this.playNextJumpSound();
         }
+    }
+
+    playNextJumpSound() {
+        const soundNumber = this.jumpSoundIndex + 1;
+        audioManager.playSound(`characterJump${soundNumber}`);
+        this.jumpSoundIndex = (this.jumpSoundIndex + 1) % 3;
     }
 
     playCharacterAnimation() {

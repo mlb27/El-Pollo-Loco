@@ -13,12 +13,16 @@ class World {
     gameOver = false;
     gameOverScreenVisible = false;
     gameOverImage = new Image();
+    gameWon = false;
+    gameWonScreenVisible = false;
+    gameWonImage = new Image();
 
     constructor(canvas, keyboard) {
         this.ctx = canvas.getContext("2d");
         this.canvas = canvas;
         this.keyboard = keyboard;
         this.loadGameOverImage();
+        this.loadGameWonImage();
         this.draw();
         this.setWorld();
         this.checkCollisions();
@@ -26,10 +30,16 @@ class World {
 
     setWorld() {
         this.character.world = this;
+        const endboss = this.level.enemies.find((enemy) => enemy instanceof Endboss);
+        if (endboss) endboss.world = this;
     }
 
     loadGameOverImage() {
         this.gameOverImage.src = 'img/10_win_loss/You lost.png';
+    }
+
+    loadGameWonImage() {
+        this.gameWonImage.src = 'img/10_win_loss/You won A.png';
     }
 
     checkCollisions() {
@@ -46,7 +56,7 @@ class World {
     }
 
     startGameOver() {
-        if (this.gameOver) return;
+        if (this.gameOver || this.gameWon) return;
         this.gameOver = true;
         audioManager.pauseBackgroundMusic();
         this.freezeGame();
@@ -66,10 +76,23 @@ class World {
         audioManager.playSound('gameOver');
     }
 
+    startGameWon() {
+        if (this.gameWon || this.gameOver) return;
+        this.gameWon = true;
+        audioManager.pauseBackgroundMusic();
+        this.freezeGame();
+    }
+
+    showGameWonScreen() {
+        if (!this.gameWon || this.gameWonScreenVisible) return;
+        this.gameWonScreenVisible = true;
+        audioManager.playSound('gameWon');
+    }
+
     checkEndbossVisibility() {
         const endboss = this.level.enemies.find((enemy) => enemy instanceof Endboss);
         if (endboss && this.isVisible(endboss)) {
-            endboss.playSpawnSound();
+            endboss.startAlert();
         }
     }
 
@@ -83,9 +106,17 @@ class World {
             this.stompChicken(enemy);
         } else if (!enemy.isDead() && this.character.isColliding(enemy) &&
             !this.character.isHurt() && !this.character.stompProtectionActive) {
-            this.character.hit();
-            this.healthBar.setPercentage(this.character.energy);
+            this.damageCharacter(enemy);
         }
+    }
+
+    damageCharacter(enemy) {
+        this.character.hit();
+        const causesKnockback = enemy instanceof Chicken || enemy instanceof Endboss;
+        if (causesKnockback && !this.character.isDead()) {
+            this.character.knockBackFrom(enemy);
+        }
+        this.healthBar.setPercentage(this.character.energy);
     }
 
     stompChicken(chicken) {
@@ -102,19 +133,37 @@ class World {
     checkBottleCollisions() {
         this.throwableObjects.forEach((bottle) => {
             this.level.enemies.forEach((enemy) => {
-                if (this.canBottleHitChicken(bottle, enemy)) this.hitChickenWithBottle(bottle, enemy);
+                this.handleBottleEnemyCollision(bottle, enemy);
             });
         });
     }
 
-    canBottleHitChicken(bottle, enemy) {
-        return enemy instanceof Chicken &&
+    handleBottleEnemyCollision(bottle, enemy) {
+        if (this.canBottleHitEnemy(bottle, enemy)) this.hitEnemyWithBottle(bottle, enemy);
+        else if (this.canEndbossBlockBottle(bottle, enemy)) bottle.bounceOffEndboss();
+    }
+
+    canEndbossBlockBottle(bottle, enemy) {
+        return enemy instanceof Endboss && !enemy.isDead() && !enemy.canBeHit() &&
+            bottle.canHitEnemy() && bottle.isColliding(enemy);
+    }
+
+    canBottleHitEnemy(bottle, enemy) {
+        const canBeHit = enemy instanceof Chicken ||
+            enemy instanceof Endboss && enemy.canBeHit();
+        return canBeHit &&
             !enemy.isDead() && bottle.canHitEnemy() && bottle.isColliding(enemy);
     }
 
-    hitChickenWithBottle(bottle, chicken) {
+    hitEnemyWithBottle(bottle, enemy) {
         bottle.hitEnemy();
-        this.killChicken(chicken);
+        if (enemy instanceof Chicken) this.killChicken(enemy);
+        else this.hitEndboss(enemy);
+    }
+
+    hitEndboss(endboss) {
+        endboss.hit();
+        if (endboss.isDead()) this.startGameWon();
     }
 
     removeEnemy(enemy) {
@@ -191,17 +240,18 @@ class World {
     drawInterface() {
         this.addToMap(this.healthBar)
         this.addToMap(this.bottleBar)
-        if (this.gameOverScreenVisible) this.drawGameOverScreen();
+        if (this.gameOverScreenVisible) this.drawEndScreen(this.gameOverImage);
+        if (this.gameWonScreenVisible) this.drawEndScreen(this.gameWonImage);
     }
 
-    drawGameOverScreen() {
+    drawEndScreen(image) {
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         const imageWidth = 600;
         const imageHeight = 275;
         const imageX = (this.canvas.width - imageWidth) / 2;
         const imageY = (this.canvas.height - imageHeight) / 2;
-        this.ctx.drawImage(this.gameOverImage, imageX, imageY, imageWidth, imageHeight);
+        this.ctx.drawImage(image, imageX, imageY, imageWidth, imageHeight);
     }
 
     requestNextFrame() {

@@ -1,42 +1,331 @@
 class Endboss extends MovableObject {
-
     IMAGES_WALKING = [
-        "img/4_enemy_boss_chicken/2_alert/G5.png",
-        "img/4_enemy_boss_chicken/2_alert/G6.png",
-        "img/4_enemy_boss_chicken/2_alert/G7.png",
-        "img/4_enemy_boss_chicken/2_alert/G8.png",
-        "img/4_enemy_boss_chicken/2_alert/G9.png",
-        "img/4_enemy_boss_chicken/2_alert/G10.png",
-        "img/4_enemy_boss_chicken/2_alert/G11.png",
-        "img/4_enemy_boss_chicken/2_alert/G12.png",
+        'img/4_enemy_boss_chicken/1_walk/G1.png',
+        'img/4_enemy_boss_chicken/1_walk/G2.png',
+        'img/4_enemy_boss_chicken/1_walk/G3.png',
+        'img/4_enemy_boss_chicken/1_walk/G4.png'
+    ];
 
-    ]
+    IMAGES_ALERT = [
+        'img/4_enemy_boss_chicken/2_alert/G5.png',
+        'img/4_enemy_boss_chicken/2_alert/G6.png',
+        'img/4_enemy_boss_chicken/2_alert/G7.png',
+        'img/4_enemy_boss_chicken/2_alert/G8.png',
+        'img/4_enemy_boss_chicken/2_alert/G9.png',
+        'img/4_enemy_boss_chicken/2_alert/G10.png',
+        'img/4_enemy_boss_chicken/2_alert/G11.png'
+    ];
 
-    spawnSoundPlayed = false;
+    IMAGES_ATTACK = [
+        'img/4_enemy_boss_chicken/3_attack/G13.png',
+        'img/4_enemy_boss_chicken/3_attack/G14.png',
+        'img/4_enemy_boss_chicken/3_attack/G15.png',
+        'img/4_enemy_boss_chicken/3_attack/G16.png',
+        'img/4_enemy_boss_chicken/3_attack/G17.png',
+        'img/4_enemy_boss_chicken/3_attack/G18.png'
+    ];
+
+    IMAGES_LANDING = [
+        'img/4_enemy_boss_chicken/3_attack/G19.png',
+        'img/4_enemy_boss_chicken/3_attack/G20.png'
+    ];
+
+    IMAGES_HURT = [
+        'img/4_enemy_boss_chicken/4_hurt/G21.png',
+        'img/4_enemy_boss_chicken/4_hurt/G22.png',
+        'img/4_enemy_boss_chicken/4_hurt/G23.png'
+    ];
+
+    IMAGES_DEAD = [
+        'img/4_enemy_boss_chicken/5_dead/G24.png',
+        'img/4_enemy_boss_chicken/5_dead/G25.png',
+        'img/4_enemy_boss_chicken/5_dead/G26.png'
+    ];
+
+    world;
+    groundY = 55;
+    maximumX = 2200;
+    speed = 1;
+    energy = 120;
+    alertStarted = false;
+    alertFinished = false;
+    currentState = 'waiting';
+    attackDeadline = 0;
+    attackDirection = -1;
+    interruptedState;
+    displayedFrameIndex = 0;
+    animationFrameDeadline = 0;
 
     constructor() {
         super();
-        this.loadImage(this.IMAGES_WALKING[0]);
-        this.loadImages(this.IMAGES_WALKING);
+        this.loadImage(this.IMAGES_ALERT[0]);
+        this.loadEndbossImages();
         this.x = 2200;
-        this.y = 55;
+        this.y = this.groundY;
         this.width = 250;
         this.height = 400;
-        this.animate();
-
     }
 
-    animate() {
-        setInterval(() => {
-            this.playAnimation(this.IMAGES_WALKING)
-        }, 200);
+    loadEndbossImages() {
+        this.loadImages(this.IMAGES_WALKING);
+        this.loadImages(this.IMAGES_ALERT);
+        this.loadImages(this.IMAGES_ATTACK);
+        this.loadImages(this.IMAGES_LANDING);
+        this.loadImages(this.IMAGES_HURT);
+        this.loadImages(this.IMAGES_DEAD);
     }
 
-    playSpawnSound() {
-        if (!this.spawnSoundPlayed) {
-            this.spawnSoundPlayed = true;
+    startAlert() {
+        if (this.alertStarted || this.isDead()) return;
+        this.alertStarted = true;
+        this.currentState = 'alert';
+        this.startFrameAnimation(this.IMAGES_ALERT, 150, () => this.holdAlertFrame());
+        this.spawnSoundTimeout = setTimeout(() => {
             audioManager.playSound('endbossSpawn');
-        }
+        }, 1000);
     }
 
+    holdAlertFrame() {
+        this.alertHoldTimeout = setTimeout(() => {
+            this.alertFinished = true;
+            this.startWalking();
+        }, 500);
+    }
+
+    startWalking(resetAttackTimer = true) {
+        if (!this.canAct()) return;
+        this.stopActionTimers();
+        this.currentState = 'walking';
+        this.currentImage = 0;
+        if (resetAttackTimer) this.attackDeadline = Date.now() + 1000;
+        this.walkAnimationInterval = setInterval(() => {
+            this.playAnimation(this.IMAGES_WALKING);
+        }, 150);
+        this.movementInterval = setInterval(() => this.moveTowardsCharacter(), 1000 / 60);
+        this.scheduleAttack();
+    }
+
+    scheduleAttack() {
+        const attackDelay = Math.max(0, this.attackDeadline - Date.now());
+        this.walkTimeout = setTimeout(() => this.startAttack(), attackDelay);
+    }
+
+    moveTowardsCharacter() {
+        this.updateDirection();
+        if (this.otherDirection) this.moveRight();
+        else this.moveLeft();
+    }
+
+    updateDirection() {
+        if (!this.world) return;
+        const characterCenter = this.world.character.x + this.world.character.width / 2;
+        const endbossCenter = this.x + this.width / 2;
+        this.otherDirection = characterCenter > endbossCenter;
+    }
+
+    startAttack() {
+        if (!this.canAct()) return;
+        this.stopActionTimers();
+        this.currentState = 'attacking';
+        this.updateDirection();
+        this.attackDirection = this.otherDirection ? 1 : -1;
+        this.startFrameAnimation(this.IMAGES_ATTACK, 200, () => this.startAttackJump());
+    }
+
+    startAttackJump() {
+        if (!this.canAct()) return;
+        this.currentState = 'jumping';
+        const lastAttackImage = this.IMAGES_ATTACK[this.IMAGES_ATTACK.length - 1];
+        this.img = this.imageCache[lastAttackImage];
+        this.speedY = 9;
+        this.jumpInterval = setInterval(() => this.moveAttackJump(), 1000 / 60);
+    }
+
+    moveAttackJump() {
+        if (!this.canAct()) return;
+        this.x += this.attackDirection * 6.5;
+        this.x = Math.max(0, Math.min(this.x, this.maximumX));
+        this.y -= this.speedY;
+        this.speedY -= 0.4;
+        if (this.y >= this.groundY && this.speedY < 0) this.landAttack();
+    }
+
+    landAttack() {
+        clearInterval(this.jumpInterval);
+        this.y = this.groundY;
+        this.speedY = 0;
+        this.currentState = 'landing';
+        this.startFrameAnimation(this.IMAGES_LANDING, 200, () => this.startWalking());
+    }
+
+    hit() {
+        if (this.isDead()) return;
+        this.saveInterruptedState();
+        super.hit();
+        this.stopActionTimers();
+        if (this.isDead()) this.prepareDeath();
+        else this.startHurtAnimation();
+    }
+
+    saveInterruptedState() {
+        if (this.currentState === 'hurt' || this.currentState === 'dead') return;
+        this.interruptedState = this.createStateSnapshot();
+    }
+
+    createStateSnapshot() {
+        return {
+            state: this.currentState,
+            frameIndex: this.displayedFrameIndex,
+            frameTime: Math.max(0, this.animationFrameDeadline - Date.now()),
+            speedY: this.speedY,
+            attackDirection: this.attackDirection
+        };
+    }
+
+    prepareDeath() {
+        this.interruptedState = null;
+        this.resetToGround();
+        this.startDeathAnimation();
+    }
+
+    startHurtAnimation() {
+        this.currentState = 'hurt';
+        this.startFrameAnimation(this.IMAGES_HURT, 150, () => this.resumeInterruptedState());
+    }
+
+    resumeInterruptedState() {
+        if (!this.canAct()) return;
+        const stateSnapshot = this.interruptedState;
+        this.interruptedState = null;
+        if (stateSnapshot) this.resumeSavedState(stateSnapshot);
+        else this.resumeWalkingTimer();
+    }
+
+    resumeSavedState(stateSnapshot) {
+        if (stateSnapshot.state === 'attacking') this.resumeAttack(stateSnapshot);
+        else if (stateSnapshot.state === 'jumping') this.resumeJump(stateSnapshot);
+        else if (stateSnapshot.state === 'landing') this.resumeLanding(stateSnapshot);
+        else if (stateSnapshot.state === 'alert') this.resumeAlert(stateSnapshot);
+        else this.resumeWalkingTimer();
+    }
+
+    resumeWalkingTimer() {
+        if (!this.attackDeadline) this.startWalking();
+        else if (Date.now() >= this.attackDeadline) this.startAttack();
+        else this.startWalking(false);
+    }
+
+    resumeAttack(stateSnapshot) {
+        this.currentState = 'attacking';
+        this.attackDirection = stateSnapshot.attackDirection;
+        this.startFrameAnimation(
+            this.IMAGES_ATTACK, 200, () => this.startAttackJump(),
+            stateSnapshot.frameIndex, stateSnapshot.frameTime
+        );
+    }
+
+    resumeJump(stateSnapshot) {
+        this.currentState = 'jumping';
+        this.speedY = stateSnapshot.speedY;
+        this.attackDirection = stateSnapshot.attackDirection;
+        const lastImage = this.IMAGES_ATTACK[this.IMAGES_ATTACK.length - 1];
+        this.img = this.imageCache[lastImage];
+        this.jumpInterval = setInterval(() => this.moveAttackJump(), 1000 / 60);
+    }
+
+    resumeLanding(stateSnapshot) {
+        this.currentState = 'landing';
+        this.startFrameAnimation(
+            this.IMAGES_LANDING, 200, () => this.startWalking(),
+            stateSnapshot.frameIndex, stateSnapshot.frameTime
+        );
+    }
+
+    resumeAlert(stateSnapshot) {
+        this.currentState = 'alert';
+        this.startFrameAnimation(
+            this.IMAGES_ALERT, 150, () => this.holdAlertFrame(),
+            stateSnapshot.frameIndex, stateSnapshot.frameTime
+        );
+    }
+
+    startDeathAnimation() {
+        this.currentState = 'dead';
+        this.startFrameAnimation(this.IMAGES_DEAD, 250, () => this.finishDeath());
+    }
+
+    finishDeath() {
+        if (this.world) this.world.showGameWonScreen();
+    }
+
+    resetToGround() {
+        this.y = this.groundY;
+        this.speedY = 0;
+    }
+
+    startFrameAnimation(images, frameDuration, onComplete, startIndex = 0, firstDelay = frameDuration) {
+        this.stopFrameAnimation();
+        this.animationImages = images;
+        this.animationFrameDuration = frameDuration;
+        this.animationCallback = onComplete;
+        this.currentImage = startIndex;
+        this.showAnimationFrame(firstDelay);
+    }
+
+    showAnimationFrame(frameDelay) {
+        this.displayedFrameIndex = this.currentImage;
+        const path = this.animationImages[this.currentImage];
+        this.img = this.imageCache[path];
+        this.animationFrameDeadline = Date.now() + frameDelay;
+        this.animationTimer = setTimeout(() => this.advanceAnimationFrame(), frameDelay);
+    }
+
+    advanceAnimationFrame() {
+        const lastImageIndex = this.animationImages.length - 1;
+        if (this.displayedFrameIndex < lastImageIndex) {
+            this.currentImage = this.displayedFrameIndex + 1;
+            this.showAnimationFrame(this.animationFrameDuration);
+        } else this.runAnimationCallback();
+    }
+
+    runAnimationCallback() {
+        const callback = this.animationCallback;
+        this.animationCallback = null;
+        if (callback) callback();
+    }
+
+    stopFrameAnimation() {
+        clearTimeout(this.animationTimer);
+        this.animationCallback = null;
+    }
+
+    stopWalking() {
+        clearInterval(this.walkAnimationInterval);
+        clearInterval(this.movementInterval);
+        clearTimeout(this.walkTimeout);
+    }
+
+    stopActionTimers() {
+        this.stopFrameAnimation();
+        this.stopWalking();
+        clearInterval(this.jumpInterval);
+        clearTimeout(this.alertHoldTimeout);
+    }
+
+    canAct() {
+        return !this.isFrozen && !this.isDead();
+    }
+
+    canBeHit() {
+        return this.alertFinished && !this.isDead();
+    }
+
+    freeze() {
+        super.freeze();
+        this.stopWalking();
+        clearInterval(this.jumpInterval);
+        clearTimeout(this.alertHoldTimeout);
+        clearTimeout(this.spawnSoundTimeout);
+        if (this.currentState !== 'dead') this.stopFrameAnimation();
+    }
 }

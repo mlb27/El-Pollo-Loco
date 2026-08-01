@@ -45,33 +45,48 @@ const level1 = new Level(
 function createChickens(amount, endbossX) {
     const chickens = [];
     const lastSpawnX = endbossX - 400;
-    let nextX = 200 + Math.random() * 500;
+    const minimumGaps = createChickenGaps(createChickenGroupSizes(amount));
+    let nextX = 800 + Math.random() * 30;
     for (let i = 0; i < amount; i++) {
         chickens.push(new Chicken(nextX));
-        const remainingGaps = amount - i - 1;
-        if (remainingGaps > 0) nextX = getNextChickenX(nextX, i, amount, lastSpawnX);
+        if (i < amount - 1) {
+            nextX = getNextChickenX(nextX, i, minimumGaps, lastSpawnX);
+        }
     }
     return chickens;
 }
 
-function getNextChickenX(currentX, currentIndex, amount, lastSpawnX) {
-    const minimumGap = getMinimumChickenGap(currentIndex);
-    const reservedSpace = getReservedChickenSpace(currentIndex + 1, amount);
+function createChickenGroupSizes(amount) {
+    const groupSizes = [];
+    let remainingChickens = amount;
+    while (remainingChickens > 0) {
+        const groupSize = Math.min(1 + Math.floor(Math.random() * 3), remainingChickens);
+        groupSizes.push(groupSize);
+        remainingChickens -= groupSize;
+    }
+    return groupSizes;
+}
+
+function createChickenGaps(groupSizes) {
+    const minimumGaps = [];
+    groupSizes.forEach((groupSize, groupIndex) => {
+        for (let i = 1; i < groupSize; i++) minimumGaps.push(150);
+        if (groupIndex < groupSizes.length - 1) minimumGaps.push(230);
+    });
+    return minimumGaps;
+}
+
+function getNextChickenX(currentX, gapIndex, minimumGaps, lastSpawnX) {
+    const minimumGap = minimumGaps[gapIndex];
+    const reservedSpace = getReservedChickenSpace(minimumGaps, gapIndex + 1);
     const availableGap = lastSpawnX - currentX - reservedSpace;
-    const maximumGap = Math.min(600, availableGap);
+    const gapLimit = minimumGap === 150 ? 250 : 600;
+    const maximumGap = Math.min(gapLimit, availableGap);
     return currentX + minimumGap + Math.random() * (maximumGap - minimumGap);
 }
 
-function getReservedChickenSpace(startIndex, amount) {
-    let reservedSpace = 0;
-    for (let i = startIndex; i < amount - 1; i++) {
-        reservedSpace += getMinimumChickenGap(i);
-    }
-    return reservedSpace;
-}
-
-function getMinimumChickenGap(currentIndex) {
-    return (currentIndex + 1) % 2 === 0 ? 400 : 150;
+function getReservedChickenSpace(minimumGaps, startIndex) {
+    return minimumGaps.slice(startIndex).reduce((sum, gap) => sum + gap, 0);
 }
 
 function createBottles(amount, endbossX) {

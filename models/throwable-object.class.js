@@ -24,6 +24,7 @@ class ThrowableObject extends MovableObject {
     groundY = 370;
     hasHitGround = false;
     hasHitEnemy = false;
+    hasBeenBlocked = false;
     isOnGround = false;
     isExpired = false;
 
@@ -108,7 +109,15 @@ class ThrowableObject extends MovableObject {
     }
 
     canHitEnemy() {
-        return !this.hasHitGround && !this.hasHitEnemy;
+        return !this.hasHitGround && !this.hasHitEnemy && !this.hasBeenBlocked;
+    }
+
+    bounceOffEndboss() {
+        this.hasBeenBlocked = true;
+        this.otherDirection = !this.otherDirection;
+        this.speedX = this.otherDirection ? -8 : 8;
+        this.speedY = 5;
+        audioManager.playSound('endbossThrowableBlocked');
     }
 
     hitEnemy() {
