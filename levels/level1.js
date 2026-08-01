@@ -1,5 +1,5 @@
 const level1Endboss = new Endboss();
-const level1Chickens = createChickens(5, level1Endboss.x);
+const level1Chickens = createChickens(5, 10, level1Endboss.x);
 const level1Bottles = createBottles(15, level1Endboss.x);
 
 const level1 = new Level(
@@ -10,7 +10,10 @@ const level1 = new Level(
 
     [
         new Cloud(),
-        new Cloud()
+        new Cloud(800),
+        new Cloud(1600),
+        new Cloud(2400),
+        new Cloud(3200)
     ],
 
     [
@@ -37,41 +40,79 @@ const level1 = new Level(
         new BackgroundObject('img/5_background/layers/air.png', 2160),
         new BackgroundObject('img/5_background/layers/3_third_layer/2.png', 2160),
         new BackgroundObject('img/5_background/layers/2_second_layer/2.png', 2160),
-        new BackgroundObject('img/5_background/layers/1_first_layer/2.png', 2160)
+        new BackgroundObject('img/5_background/layers/1_first_layer/2.png', 2160),
+
+        new BackgroundObject('img/5_background/layers/air.png', 2880),
+        new BackgroundObject('img/5_background/layers/3_third_layer/1.png', 2880),
+        new BackgroundObject('img/5_background/layers/2_second_layer/1.png', 2880),
+        new BackgroundObject('img/5_background/layers/1_first_layer/1.png', 2880),
+
+        new BackgroundObject('img/5_background/layers/air.png', 3600),
+        new BackgroundObject('img/5_background/layers/3_third_layer/2.png', 3600),
+        new BackgroundObject('img/5_background/layers/2_second_layer/2.png', 3600),
+        new BackgroundObject('img/5_background/layers/1_first_layer/2.png', 3600)
     ],
     level1Bottles
 );
 
-function createChickens(amount, endbossX) {
-    const chickens = [];
-    const lastSpawnX = endbossX - 400;
-    const minimumGaps = createChickenGaps(createChickenGroupSizes(amount));
-    let nextX = 800 + Math.random() * 30;
-    for (let i = 0; i < amount; i++) {
-        chickens.push(new Chicken(nextX));
-        if (i < amount - 1) {
-            nextX = getNextChickenX(nextX, i, minimumGaps, lastSpawnX);
-        }
+function createChickens(normalAmount, smallAmount, endbossX) {
+    const chickenTypes = createChickenTypes(normalAmount, smallAmount);
+    const groupSizes = createChickenGroupSizes(chickenTypes.length);
+    const positions = createChickenPositions(groupSizes, endbossX);
+    return positions.map((x, index) => createChicken(chickenTypes[index], x));
+}
+
+function createChickenTypes(normalAmount, smallAmount) {
+    const chickenTypes = [];
+    for (let i = 0; i < normalAmount; i++) chickenTypes.push('normal');
+    for (let i = 0; i < smallAmount; i++) chickenTypes.push('small');
+    return shuffleChickenItems(chickenTypes);
+}
+
+function shuffleChickenItems(items) {
+    for (let index = items.length - 1; index > 0; index--) {
+        const randomIndex = Math.floor(Math.random() * (index + 1));
+        const currentItem = items[index];
+        items[index] = items[randomIndex];
+        items[randomIndex] = currentItem;
     }
-    return chickens;
+    return items;
+}
+
+function createChicken(type, x) {
+    if (type === 'normal') return new Chicken(x);
+    return new ChickenSmall(x);
+}
+
+function createChickenPositions(groupSizes, endbossX) {
+    const positions = [];
+    const minimumGaps = createChickenGaps(groupSizes);
+    const amount = groupSizes.reduce((sum, size) => sum + size, 0);
+    const lastSpawnX = endbossX - 400;
+    let nextX = 550 + Math.random() * 50;
+    for (let i = 0; i < amount; i++) {
+        positions.push(nextX);
+        if (i < amount - 1) nextX = getNextChickenX(nextX, i, minimumGaps, lastSpawnX);
+    }
+    return positions;
 }
 
 function createChickenGroupSizes(amount) {
-    const groupSizes = [];
-    let remainingChickens = amount;
+    const groupSizes = [1, 2];
+    let remainingChickens = amount - 3;
     while (remainingChickens > 0) {
-        const groupSize = Math.min(1 + Math.floor(Math.random() * 3), remainingChickens);
+        const groupSize = Math.min(3, remainingChickens);
         groupSizes.push(groupSize);
         remainingChickens -= groupSize;
     }
-    return groupSizes;
+    return shuffleChickenItems(groupSizes);
 }
 
 function createChickenGaps(groupSizes) {
     const minimumGaps = [];
     groupSizes.forEach((groupSize, groupIndex) => {
-        for (let i = 1; i < groupSize; i++) minimumGaps.push(150);
-        if (groupIndex < groupSizes.length - 1) minimumGaps.push(230);
+        for (let i = 1; i < groupSize; i++) minimumGaps.push(70);
+        if (groupIndex < groupSizes.length - 1) minimumGaps.push(300);
     });
     return minimumGaps;
 }
@@ -80,7 +121,7 @@ function getNextChickenX(currentX, gapIndex, minimumGaps, lastSpawnX) {
     const minimumGap = minimumGaps[gapIndex];
     const reservedSpace = getReservedChickenSpace(minimumGaps, gapIndex + 1);
     const availableGap = lastSpawnX - currentX - reservedSpace;
-    const gapLimit = minimumGap === 150 ? 250 : 600;
+    const gapLimit = minimumGap === 70 ? 110 : 500;
     const maximumGap = Math.min(gapLimit, availableGap);
     return currentX + minimumGap + Math.random() * (maximumGap - minimumGap);
 }
@@ -89,24 +130,16 @@ function getReservedChickenSpace(minimumGaps, startIndex) {
     return minimumGaps.slice(startIndex).reduce((sum, gap) => sum + gap, 0);
 }
 
+
 function createBottles(amount, endbossX) {
     const bottles = [];
-    const lastSpawnX = endbossX - 200;
-    let nextX = 250 + Math.random() * 100;
+    const firstBottleX = 250 + Math.random() * 100;
+    const lastBottleX = endbossX - 600 - Math.random() * 100;
     for (let i = 0; i < amount; i++) {
-        bottles.push(new Bottle(nextX));
-        const remainingBottles = amount - i - 1;
-        if (remainingBottles > 0) {
-            nextX = getNextBottleX(nextX, remainingBottles, lastSpawnX);
-        }
+        const progress = i / (amount - 1);
+        const randomOffset = i === 0 || i === amount - 1 ? 0 : (Math.random() - 0.5) * 60;
+        const bottleX = firstBottleX + (lastBottleX - firstBottleX) * progress + randomOffset;
+        bottles.push(new Bottle(bottleX));
     }
     return bottles;
-}
-
-function getNextBottleX(currentX, remainingBottles, lastSpawnX) {
-    const minimumGap = 100;
-    const reservedSpace = (remainingBottles - 1) * minimumGap;
-    const availableGap = lastSpawnX - currentX - reservedSpace;
-    const maximumGap = Math.min(180, availableGap);
-    return currentX + minimumGap + Math.random() * (maximumGap - minimumGap);
 }

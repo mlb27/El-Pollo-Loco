@@ -7,6 +7,8 @@ class World {
     camera_x = 0;
     healthBar = new HealthBar();
     bottleBar = new BottleBar();
+    endbossBar = new EndbossBar();
+    endbossBarVisible = false;
     throwableObjects = [];
     lastBottleThrow = 0;
     bottleThrowCooldown = 1000;
@@ -93,6 +95,7 @@ class World {
         const endboss = this.level.enemies.find((enemy) => enemy instanceof Endboss);
         if (endboss && this.isVisible(endboss)) {
             endboss.startAlert();
+            this.endbossBarVisible = endboss.alertStarted;
         }
     }
 
@@ -101,8 +104,12 @@ class World {
         return screenX < this.canvas.width && screenX + movableObject.width > 0;
     }
 
+    isChicken(enemy) {
+        return enemy instanceof Chicken || enemy instanceof ChickenSmall;
+    }
+
     checkEnemyCollision(enemy) {
-        if (enemy instanceof Chicken && !enemy.isDead() && this.character.isJumpingOn(enemy)) {
+        if (this.isChicken(enemy) && !enemy.isDead() && this.character.isJumpingOn(enemy)) {
             this.stompChicken(enemy);
         } else if (!enemy.isDead() && this.character.isColliding(enemy) &&
             !this.character.isHurt() && !this.character.stompProtectionActive) {
@@ -112,9 +119,10 @@ class World {
 
     damageCharacter(enemy) {
         this.character.hit();
-        const causesKnockback = enemy instanceof Chicken || enemy instanceof Endboss;
+        const causesKnockback = this.isChicken(enemy) || enemy instanceof Endboss;
         if (causesKnockback && !this.character.isDead()) {
             this.character.knockBackFrom(enemy);
+            if (enemy instanceof Endboss) enemy.knockBackAfterHit();
         }
         this.healthBar.setPercentage(this.character.energy);
     }
@@ -149,7 +157,7 @@ class World {
     }
 
     canBottleHitEnemy(bottle, enemy) {
-        const canBeHit = enemy instanceof Chicken ||
+        const canBeHit = this.isChicken(enemy) ||
             enemy instanceof Endboss && enemy.canBeHit();
         return canBeHit &&
             !enemy.isDead() && bottle.canHitEnemy() && bottle.isColliding(enemy);
@@ -157,12 +165,13 @@ class World {
 
     hitEnemyWithBottle(bottle, enemy) {
         bottle.hitEnemy();
-        if (enemy instanceof Chicken) this.killChicken(enemy);
+        if (this.isChicken(enemy)) this.killChicken(enemy);
         else this.hitEndboss(enemy);
     }
 
     hitEndboss(endboss) {
         endboss.hit();
+        this.endbossBar.setPercentage(endboss.getEnergyPercentage());
         if (endboss.isDead()) this.startGameWon();
     }
 
@@ -240,6 +249,7 @@ class World {
     drawInterface() {
         this.addToMap(this.healthBar)
         this.addToMap(this.bottleBar)
+        if (this.endbossBarVisible) this.addToMap(this.endbossBar)
         if (this.gameOverScreenVisible) this.drawEndScreen(this.gameOverImage);
         if (this.gameWonScreenVisible) this.drawEndScreen(this.gameWonImage);
     }
@@ -270,7 +280,6 @@ class World {
         }
 
         mo.draw(this.ctx);
-        mo.drawFrame(this.ctx);
 
         if (mo.otherDirection) {
             this.flipImageBack(mo);
