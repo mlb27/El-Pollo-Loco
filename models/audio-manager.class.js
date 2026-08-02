@@ -31,6 +31,19 @@ class AudioManager {
 
     constructor() {
         this.playBackgroundMusic = this.playBackgroundMusic.bind(this);
+        this.loadSoundSetting();
+        this.updateSoundState();
+    }
+
+    loadSoundSetting() {
+        const savedSoundSetting = localStorage.getItem('soundEnabled');
+        if (savedSoundSetting !== null) {
+            this.soundEnabled = savedSoundSetting === 'true';
+        }
+    }
+
+    saveSoundSetting() {
+        localStorage.setItem('soundEnabled', this.soundEnabled);
     }
 
     startBackgroundMusic() {
@@ -62,6 +75,7 @@ class AudioManager {
 
     toggleSound() {
         this.soundEnabled = !this.soundEnabled;
+        this.saveSoundSetting();
         this.updateSoundState();
     }
 
