@@ -33,8 +33,13 @@
   <main class="game-container">
     <h1>El Pollo Loco</h1>
     <canvas id="canvas" width="720" height="480"></canvas>
-    <button id="soundButton" class="sound-button" type="button" onclick="toggleSound()"
-      aria-label="Sounds ausschalten" title="Sounds ausschalten">🔊</button>
+    <div class="audio-controls">
+      <button id="soundEffectsButton" class="menu-icon-button sound-effects-button is-enabled" type="button"
+        onclick="toggleSoundEffects()" aria-label="Soundeffekte ausschalten" aria-pressed="true"
+        title="Soundeffekte ausschalten"></button>
+      <button id="musicButton" class="menu-icon-button music-button is-enabled" type="button" onclick="toggleMusic()"
+        aria-label="Soundtrack ausschalten" aria-pressed="true" title="Soundtrack ausschalten"></button>
+    </div>
   </main>
 </body>
 

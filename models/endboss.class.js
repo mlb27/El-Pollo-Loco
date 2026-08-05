@@ -166,6 +166,7 @@ class Endboss extends MovableObject {
     }
 
     startWalkAnimation() {
+        audioManager.playLoopingSound('endbossWalking');
         if (this.walkAnimationInterval) return;
         this.walkAnimationInterval = setInterval(() => {
             this.playAnimation(this.IMAGES_WALKING);
@@ -175,6 +176,7 @@ class Endboss extends MovableObject {
     pauseWalkAnimation() {
         clearInterval(this.walkAnimationInterval);
         this.walkAnimationInterval = null;
+        audioManager.stopLoopingSound('endbossWalking');
     }
 
     startAttack() {
@@ -187,6 +189,7 @@ class Endboss extends MovableObject {
         this.stopActionTimers();
         this.currentState = 'attacking';
         this.attackDirection = this.otherDirection ? 1 : -1;
+        audioManager.playSound('endbossPrepare');
         this.startFrameAnimation(this.IMAGES_ATTACK, 200, () => this.startAttackJump());
     }
 
@@ -209,6 +212,7 @@ class Endboss extends MovableObject {
     startAttackJump() {
         if (!this.canAct()) return;
         this.currentState = 'jumping';
+        audioManager.playSound('endbossJump');
         const lastAttackImage = this.IMAGES_ATTACK[this.IMAGES_ATTACK.length - 1];
         this.img = this.imageCache[lastAttackImage];
         this.speedY = 9;

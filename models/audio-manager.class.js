@@ -1,5 +1,6 @@
 class AudioManager {
-    soundEnabled = true;
+    soundEffectsEnabled = true;
+    musicEnabled = true;
     sounds = {
         backgroundMusic: new Audio('audio/soundtrack.mp3'),
         characterJump1: new Audio('audio/character-jump1.mp3'),
@@ -20,6 +21,9 @@ class AudioManager {
         endbossHit4: new Audio('audio/endboss-hit4.mp3'),
         endbossHit5: new Audio('audio/endboss-hit5.mp3'),
         endbossDied: new Audio('audio/endboss-died.mp3'),
+        endbossWalking: new Audio('audio/endboss-walking.mp3'),
+        endbossPrepare: new Audio('audio/endboss-prepare.mp3'),
+        endbossJump: new Audio('audio/endboss-jump.mp3'),
         endbossThrowableBlocked: new Audio('audio/endboss-throwable-blocked.mp3'),
         bottleThrow: new Audio('audio/bottle-throw.mp3'),
         bottlePickup: new Audio('audio/bottle-pickup.mp3'),
@@ -31,19 +35,28 @@ class AudioManager {
 
     constructor() {
         this.playBackgroundMusic = this.playBackgroundMusic.bind(this);
-        this.loadSoundSetting();
-        this.updateSoundState();
+        this.loadSoundSettings();
+        this.updateAudioState();
     }
 
-    loadSoundSetting() {
-        const savedSoundSetting = localStorage.getItem('soundEnabled');
-        if (savedSoundSetting !== null) {
-            this.soundEnabled = savedSoundSetting === 'true';
-        }
+    loadSoundSettings() {
+        this.soundEffectsEnabled = this.getSoundSetting('soundEffectsEnabled');
+        this.musicEnabled = this.getSoundSetting('musicEnabled');
     }
 
-    saveSoundSetting() {
-        localStorage.setItem('soundEnabled', this.soundEnabled);
+    getSoundSetting(settingName) {
+        const savedSetting = localStorage.getItem(settingName);
+        if (savedSetting !== null) return savedSetting === 'true';
+        return this.getLegacySoundSetting();
+    }
+
+    getLegacySoundSetting() {
+        const savedSetting = localStorage.getItem('soundEnabled');
+        return savedSetting === null || savedSetting === 'true';
+    }
+
+    saveSoundSetting(settingName, settingValue) {
+        localStorage.setItem(settingName, settingValue);
     }
 
     startBackgroundMusic() {
@@ -73,15 +86,37 @@ class AudioManager {
         document.removeEventListener('keydown', this.playBackgroundMusic);
     }
 
-    toggleSound() {
-        this.soundEnabled = !this.soundEnabled;
-        this.saveSoundSetting();
-        this.updateSoundState();
+    toggleSoundEffects() {
+        this.soundEffectsEnabled = !this.soundEffectsEnabled;
+        this.saveSoundSetting('soundEffectsEnabled', this.soundEffectsEnabled);
+        this.updateSoundEffectsState();
     }
 
-    updateSoundState() {
-        Object.values(this.sounds).forEach((sound) => sound.muted = !this.soundEnabled);
-        if (!this.soundEnabled) this.stopSoundEffects();
+    toggleMusic() {
+        this.musicEnabled = !this.musicEnabled;
+        this.saveSoundSetting('musicEnabled', this.musicEnabled);
+        this.updateMusicState();
+    }
+
+    updateAudioState() {
+        this.updateSoundEffectsState();
+        this.updateMusicState();
+    }
+
+    updateSoundEffectsState() {
+        const soundEffects = this.getSoundEffects();
+        soundEffects.forEach((sound) => sound.muted = !this.soundEffectsEnabled);
+        if (!this.soundEffectsEnabled) this.stopSoundEffects();
+    }
+
+    updateMusicState() {
+        this.sounds.backgroundMusic.muted = !this.musicEnabled;
+    }
+
+    getSoundEffects() {
+        return Object.entries(this.sounds)
+            .filter(([soundName]) => soundName !== 'backgroundMusic')
+            .map(([, sound]) => sound);
     }
 
     stopSoundEffects() {
@@ -92,9 +127,23 @@ class AudioManager {
 
     playSound(soundName) {
         const sound = this.sounds[soundName];
-        if (!sound || !this.soundEnabled) return;
+        if (!sound || !this.soundEffectsEnabled) return;
         sound.currentTime = 0;
         sound.play();
+    }
+
+    playLoopingSound(soundName) {
+        const sound = this.sounds[soundName];
+        if (!sound || !this.soundEffectsEnabled || !sound.paused) return;
+        sound.loop = true;
+        sound.play();
+    }
+
+    stopLoopingSound(soundName) {
+        const sound = this.sounds[soundName];
+        if (!sound) return;
+        sound.loop = false;
+        this.stopAudio(sound);
     }
 
     stopSound(soundName) {

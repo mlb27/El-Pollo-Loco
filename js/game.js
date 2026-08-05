@@ -5,22 +5,40 @@ let keyboard = new Keyboard();
 function init() {
     canvas = document.getElementById("canvas")
     world = new World(canvas, keyboard);
-    updateSoundButton();
+    updateAudioButtons();
     audioManager.startBackgroundMusic();
 }
 
-function toggleSound() {
-    audioManager.toggleSound();
-    updateSoundButton();
+function toggleSoundEffects() {
+    audioManager.toggleSoundEffects();
+    updateSoundEffectsButton();
 }
 
-function updateSoundButton() {
-    const soundButton = document.getElementById('soundButton');
-    const soundEnabled = audioManager.soundEnabled;
-    const soundAction = soundEnabled ? 'ausschalten' : 'einschalten';
-    soundButton.textContent = soundEnabled ? '🔊' : '🔇';
-    soundButton.setAttribute('aria-label', `Sounds ${soundAction}`);
-    soundButton.title = `Sounds ${soundAction}`;
+function toggleMusic() {
+    audioManager.toggleMusic();
+    updateMusicButton();
+}
+
+function updateAudioButtons() {
+    updateSoundEffectsButton();
+    updateMusicButton();
+}
+
+function updateSoundEffectsButton() {
+    updateAudioButton('soundEffectsButton', audioManager.soundEffectsEnabled, 'Soundeffekte');
+}
+
+function updateMusicButton() {
+    updateAudioButton('musicButton', audioManager.musicEnabled, 'Soundtrack');
+}
+
+function updateAudioButton(buttonId, enabled, label) {
+    const button = document.getElementById(buttonId);
+    const soundAction = enabled ? 'ausschalten' : 'einschalten';
+    button.classList.toggle('is-enabled', enabled);
+    button.setAttribute('aria-label', `${label} ${soundAction}`);
+    button.setAttribute('aria-pressed', enabled);
+    button.title = `${label} ${soundAction}`;
 }
 
 window.addEventListener("keydown", (e) => {

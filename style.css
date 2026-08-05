@@ -57,21 +57,41 @@ h1 {
     background: url("img/frame.png") center / 100% 100% no-repeat;
 }
 
-.sound-button {
+.audio-controls {
     position: absolute;
     top: 12px;
     right: 12px;
     z-index: 3;
-    width: 46px;
-    height: 46px;
+    display: flex;
+    gap: 4px;
+}
+
+.menu-icon-button {
+    width: 52px;
+    height: 52px;
     padding: 0;
-    border: 2px solid #8b3a2e;
-    border-radius: 50%;
-    background-color: #ff4d00;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+    border: 0;
+    background-color: transparent;
+    background-image: url("img/menu-icons.png");
+    background-repeat: no-repeat;
+    background-size: 470px auto;
     cursor: pointer;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 24px;
+}
+
+.sound-effects-button {
+    background-position: -172px -153px;
+}
+
+.sound-effects-button.is-enabled {
+    background-position: -102px -153px;
+}
+
+.music-button {
+    background-position: -314px -153px;
+}
+
+.music-button.is-enabled {
+    background-position: -243px -153px;
 }
 
 canvas {
