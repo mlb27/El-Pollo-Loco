@@ -30,7 +30,7 @@
 </head>
 
 <body onload="init()">
-  <main class="game-container">
+  <main id="gameContainer" class="game-container">
     <h1>El Pollo Loco</h1>
     <canvas id="canvas" width="720" height="480"></canvas>
     <div id="startGameControls" class="start-game-controls" hidden>
@@ -72,9 +72,9 @@
           title="Credits schließen"></button>
         <div class="menu-content credits-content">
           <h2>Credits</h2>
-          <p class="credits-assets">&quot;Wooden game ui design elements for videogame menu&quot;<br>
-            &quot;Wild west saloon decorative elements&quot;<br>
-            &quot;Wooden and gold buttons for ui game&quot;</p>
+          <p class="credits-assets">"Wooden game ui design elements for videogame menu"<br>
+            "Wild west saloon decorative elements"<br>
+            "Wooden and gold buttons for ui game"</p>
           <p class="credits-author">by upklyak | Designed by Magnific</p>
           <a href="https://www.magnific.com" target="_blank" rel="noopener noreferrer">www.magnific.com</a>
         </div>
@@ -95,6 +95,7 @@
       </section>
     </div>
   </main>
+  <button class="imprint-link" type="button" onclick="openImprint()">Impressum</button>
 </body>
 
 </html>

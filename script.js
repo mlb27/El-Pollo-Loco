@@ -6,8 +6,8 @@ function init() {
     canvas = document.getElementById("canvas")
     updateAudioButtons();
     audioManager.startBackgroundMusic();
-    if (shouldRestartGame()) startGame();
-    else showStartScreen();
+    document.addEventListener('click', closeAudioMenuOnOutsideClick);
+    showStartScreen();
 }
 
 function showStartScreen() {
@@ -24,15 +24,12 @@ function drawStartScreen(startScreen) {
 
 function startGame() {
     if (world) return;
-    document.getElementById('startGameControls').hidden = true;
-    document.getElementById('endScreenControls').hidden = true;
+    hideGameControls();
+    resetKeyboard();
+    initLevel();
+    audioManager.stopSoundEffects();
+    audioManager.startBackgroundMusic();
     world = new World(canvas, keyboard);
-}
-
-function shouldRestartGame() {
-    const restartGame = sessionStorage.getItem('restartGame') === 'true';
-    sessionStorage.removeItem('restartGame');
-    return restartGame;
 }
 
 function showEndScreenControls(gameWon) {
@@ -42,13 +39,28 @@ function showEndScreenControls(gameWon) {
 }
 
 function restartGame() {
-    sessionStorage.setItem('restartGame', 'true');
-    window.location.reload();
+    stopCurrentGame();
+    startGame();
 }
 
 function showMainMenu() {
-    sessionStorage.removeItem('restartGame');
-    window.location.reload();
+    stopCurrentGame();
+    showStartScreen();
+}
+
+function stopCurrentGame() {
+    if (world) world.stopGame();
+    world = null;
+    hideGameControls();
+}
+
+function hideGameControls() {
+    document.getElementById('startGameControls').hidden = true;
+    document.getElementById('endScreenControls').hidden = true;
+}
+
+function resetKeyboard() {
+    keyboard = new Keyboard();
 }
 
 function toggleSoundEffects() {
@@ -62,11 +74,16 @@ function toggleMusic() {
 }
 
 function toggleAudioMenu() {
-    const menuButton = document.getElementById('audioMenuButton');
     const menuDropdown = document.getElementById('audioMenuDropdown');
-    const menuOpen = menuDropdown.hidden;
-    menuDropdown.hidden = !menuOpen;
-    menuButton.setAttribute('aria-expanded', menuOpen);
+    if (menuDropdown.hidden) openAudioMenu();
+    else closeAudioMenu();
+}
+
+function openAudioMenu() {
+    const menuDropdown = document.getElementById('audioMenuDropdown');
+    menuDropdown.classList.remove('audio-menu-closing');
+    menuDropdown.hidden = false;
+    document.getElementById('audioMenuButton').setAttribute('aria-expanded', true);
 }
 
 function openCredits() {
@@ -102,8 +119,20 @@ function hideOpenMenuOverlays() {
 }
 
 function closeAudioMenu() {
-    document.getElementById('audioMenuDropdown').hidden = true;
+    const menuDropdown = document.getElementById('audioMenuDropdown');
+    if (menuDropdown.hidden || menuDropdown.classList.contains('audio-menu-closing')) return;
+    menuDropdown.classList.add('audio-menu-closing');
+    menuDropdown.addEventListener('animationend', hideAudioMenu, { once: true });
     document.getElementById('audioMenuButton').setAttribute('aria-expanded', false);
+}
+
+function closeAudioMenuOnOutsideClick(event) {
+    if (!event.target.closest('.audio-controls')) closeAudioMenu();
+}
+
+function hideAudioMenu(event) {
+    event.currentTarget.hidden = true;
+    event.currentTarget.classList.remove('audio-menu-closing');
 }
 
 function closeCredits() {
@@ -189,3 +218,6 @@ window.addEventListener("keyup", (e) => {
         keyboard.SPACE = false;
     }
 });
+function openImprint() {
+    window.location.href = 'html/impressum.html';
+}

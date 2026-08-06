@@ -45,7 +45,7 @@ class Endboss extends MovableObject {
     world;
     groundY = 55;
     maximumX = 3200;
-    speed = 1.5;
+    speed = 1.8;
     energy = 120;
     safeDistance = 200;
     mapEdgeRange = 150;
@@ -215,7 +215,7 @@ class Endboss extends MovableObject {
         audioManager.playSound('endbossJump');
         const lastAttackImage = this.IMAGES_ATTACK[this.IMAGES_ATTACK.length - 1];
         this.img = this.imageCache[lastAttackImage];
-        this.speedY = 9;
+        this.speedY = 10.5;
         this.jumpInterval = setInterval(() => this.moveAttackJump(), 1000 / 60);
     }
 
@@ -235,7 +235,7 @@ class Endboss extends MovableObject {
             this.otherDirection = distance > 0;
             this.attackDirection = this.otherDirection ? 1 : -1;
         }
-        const movement = Math.min(7.5, Math.abs(distance));
+        const movement = Math.min(11, Math.abs(distance));
         this.x += this.attackDirection * movement;
         this.x = Math.max(0, Math.min(this.x, this.getMaximumX()));
     }
@@ -245,13 +245,13 @@ class Endboss extends MovableObject {
         clearInterval(this.jumpInterval);
         this.currentState = 'knockedBack';
         this.attackDirection *= -1;
-        this.speedY = 5;
+        this.speedY = 6;
         this.jumpInterval = setInterval(() => this.moveAttackKnockback(), 1000 / 60);
     }
 
     moveAttackKnockback() {
         if (!this.canAct()) return;
-        this.x += this.attackDirection * 3;
+        this.x += this.attackDirection * 4;
         this.x = Math.max(0, Math.min(this.x, this.getMaximumX()));
         this.y -= this.speedY;
         this.speedY -= 0.4;

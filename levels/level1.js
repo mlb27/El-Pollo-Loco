@@ -1,8 +1,11 @@
-const level1Endboss = new Endboss();
-const level1Chickens = createChickens(5, 10, level1Endboss.x);
-const level1Bottles = createBottles(15, level1Endboss.x);
+let level1;
 
-const level1 = new Level(
+function initLevel() {
+    const level1Endboss = new Endboss();
+    const level1Chickens = createChickens(5, 10, level1Endboss.x);
+    const level1Bottles = createBottles(15, level1Endboss.x);
+
+    level1 = new Level(
     [
         ...level1Chickens,
         level1Endboss
@@ -53,7 +56,8 @@ const level1 = new Level(
         new BackgroundObject('img/5_background/layers/1_first_layer/2.png', 3600)
     ],
     level1Bottles
-);
+    );
+}
 
 function createChickens(normalAmount, smallAmount, endbossX) {
     const chickenTypes = createChickenTypes(normalAmount, smallAmount);

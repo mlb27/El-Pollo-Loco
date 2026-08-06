@@ -18,6 +18,9 @@ class World {
     gameWon = false;
     gameWonScreenVisible = false;
     gameWonImage = new Image();
+    stopped = false;
+    animationFrame;
+    gameOverTimeout;
 
     constructor(canvas, keyboard) {
         this.ctx = canvas.getContext("2d");
@@ -62,7 +65,7 @@ class World {
         this.gameOver = true;
         audioManager.pauseBackgroundMusic();
         this.freezeGame();
-        setTimeout(() => this.showGameOverScreen(), 1000);
+        this.gameOverTimeout = setTimeout(() => this.showGameOverScreen(), 1000);
     }
 
     freezeGame() {
@@ -267,7 +270,32 @@ class World {
     }
 
     requestNextFrame() {
-        requestAnimationFrame(() => this.draw());
+        if (!this.stopped) this.animationFrame = requestAnimationFrame(() => this.draw());
+    }
+
+    stopGame() {
+        this.stopped = true;
+        cancelAnimationFrame(this.animationFrame);
+        this.clearGameTimers();
+        this.stopGameObjects();
+    }
+
+    clearGameTimers() {
+        clearInterval(this.collisionInterval);
+        clearInterval(this.bottleThrowInterval);
+        clearTimeout(this.gameOverTimeout);
+    }
+
+    stopGameObjects() {
+        const objects = [this.character, ...this.level.enemies, ...this.throwableObjects];
+        objects.forEach((object) => this.stopGameObject(object));
+    }
+
+    stopGameObject(object) {
+        if (object.freeze) object.freeze();
+        clearInterval(object.movementInterval);
+        clearInterval(object.animationInterval);
+        clearInterval(object.deathAnimationInterval);
     }
 
     addObjectsToMap(objects) {

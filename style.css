@@ -17,7 +17,7 @@ body {
     font-family: "zabars", Arial, Helvetica, sans-serif;
 }
 
-h1 {
+.game-container h1 {
     position: absolute;
     top: calc((480px - 100vh) / 4);
     left: 50%;
@@ -115,6 +115,10 @@ h1 {
     animation: fadeInDropdown 120ms ease-out;
 }
 
+.audio-menu-dropdown.audio-menu-closing {
+    animation: fadeOutDropdown 120ms ease-in forwards;
+}
+
 .audio-menu-dropdown .menu-icon-button {
     display: block;
 }
@@ -137,7 +141,7 @@ h1 {
 
 .quick-menu-controls {
     position: absolute;
-    top: -52px;
+    top: -87px;
     left: 29px;
     z-index: 3;
     display: flex;
@@ -334,6 +338,7 @@ canvas {
     font-family: "zabars", Arial, Helvetica, sans-serif;
     font-size: 27px;
     letter-spacing: 2px;
+    transition: filter 120ms ease-out, transform 120ms ease-out;
 }
 
 .game-action-icon {
@@ -346,7 +351,7 @@ canvas {
     transition: filter 120ms ease-out, transform 120ms ease-out;
 }
 
-.game-action-button:hover .game-action-icon {
+.game-action-button:hover {
     filter: drop-shadow(0 0 7px rgba(255, 224, 120, 0.85));
     transform: scale(1.04);
 }
@@ -358,4 +363,69 @@ canvas {
 .wheel-icon {
     width: 90px;
     background-position: -12px -88px;
+}
+
+.imprint-link {
+    position: fixed;
+    bottom: 12px;
+    left: 50%;
+    z-index: 5;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #ffe0a3;
+    cursor: pointer;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14px;
+    text-decoration: underline;
+    transform: translateX(-50%);
+}
+
+.imprint-page {
+    color: #ffe0a3;
+    text-align: center;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 24px;
+}
+
+.imprint-page[hidden] {
+    display: none;
+}
+
+.imprint-back-button {
+    margin-bottom: 24px;
+    border: 2px solid #8b3a2e;
+    border-radius: 6px;
+    background-color: #ffe0a3;
+    color: #8b3a2e;
+    cursor: pointer;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.imprint-page h1,
+.imprint-page h2 {
+    position: static;
+    margin: 0 0 18px;
+    color: #ffe0a3;
+    -webkit-text-stroke: 0;
+    text-shadow: 1px 2px 3px rgba(0, 0, 0, 0.9);
+    font-family: Arial, Helvetica, sans-serif;
+    letter-spacing: 0;
+    transform: none;
+}
+
+.imprint-page h1 {
+    font-size: 32px;
+}
+
+.imprint-page h2 {
+    margin-top: 28px;
+    font-size: 24px;
+}
+
+.imprint-page p {
+    margin: 0;
+    line-height: 1.5;
 }
