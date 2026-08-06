@@ -7,6 +7,7 @@ class World {
     camera_x = 0;
     healthBar = new HealthBar();
     bottleBar = new BottleBar();
+    coinBar = new CoinBar();
     endbossBar = new EndbossBar();
     endbossBarVisible = false;
     throwableObjects = [];
@@ -55,6 +56,7 @@ class World {
     runCollisionChecks() {
         this.level.enemies.forEach((enemy) => this.checkEnemyCollision(enemy));
         this.checkBottlePickups();
+        this.checkCoinPickups();
         this.checkBottleCollisions();
         this.removeExpiredBottles();
         this.checkEndbossVisibility();
@@ -209,6 +211,23 @@ class World {
         this.bottleBar.setPercentage(this.character.getBottlePercentage());
     }
 
+    checkCoinPickups() {
+        this.level.coins.forEach((coin) => {
+            if (this.canCollectCoin(coin)) this.collectCoin(coin);
+        });
+    }
+
+    canCollectCoin(coin) {
+        return this.character.canCollectCoin() && this.character.isColliding(coin);
+    }
+
+    collectCoin(coin) {
+        this.character.collectCoin();
+        audioManager.playSound('coinPickup');
+        this.level.coins = this.level.coins.filter((item) => item !== coin);
+        this.coinBar.setPercentage(this.character.getCoinPercentage());
+    }
+
     checkThrowObjects() {
         if (this.keyboard.D && this.canThrowBottle()) {
             let bottle = new ThrowableObject(
@@ -244,6 +263,7 @@ class World {
         this.ctx.translate(this.camera_x, 0);
         this.addObjectsToMap(this.level.backgroundObjects);
         this.addObjectsToMap(this.level.bottles);
+        this.addObjectsToMap(this.level.coins);
         this.addToMap(this.character)
         this.addObjectsToMap(this.level.clouds);
         this.addObjectsToMap(this.level.enemies);
@@ -253,6 +273,7 @@ class World {
 
     drawInterface() {
         this.addToMap(this.healthBar)
+        this.addToMap(this.coinBar)
         this.addToMap(this.bottleBar)
         if (this.endbossBarVisible) this.addToMap(this.endbossBar)
         if (this.gameOverScreenVisible) this.drawEndScreen(this.gameOverImage);

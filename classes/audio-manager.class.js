@@ -27,6 +27,7 @@ class AudioManager {
         endbossThrowableBlocked: new Audio('audio/endboss-throwable-blocked.mp3'),
         bottleThrow: new Audio('audio/bottle-throw.mp3'),
         bottlePickup: new Audio('audio/bottle-pickup.mp3'),
+        coinPickup: new Audio('audio/coin.mp3'),
         bottleHit: new Audio('audio/bottle-hit.mp3'),
         bottleLand: new Audio('audio/bottle-land.mp3'),
         gameOver: new Audio('audio/game-youlose.mp3'),

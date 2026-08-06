@@ -4,6 +4,7 @@ function initLevel() {
     const level1Endboss = new Endboss();
     const level1Chickens = createChickens(5, 10, level1Endboss.x);
     const level1Bottles = createBottles(15, level1Endboss.x);
+    const level1Coins = createCoins(5, level1Endboss.x);
 
     level1 = new Level(
     [
@@ -55,7 +56,8 @@ function initLevel() {
         new BackgroundObject('img/5_background/layers/2_second_layer/2.png', 3600),
         new BackgroundObject('img/5_background/layers/1_first_layer/2.png', 3600)
     ],
-    level1Bottles
+    level1Bottles,
+    level1Coins
     );
 }
 
@@ -146,4 +148,17 @@ function createBottles(amount, endbossX) {
         bottles.push(new Bottle(bottleX));
     }
     return bottles;
+}
+function createCoins(amount, endbossX) {
+    const coins = [];
+    const firstCoinX = 400 + Math.random() * 100;
+    const lastCoinX = endbossX - 500 - Math.random() * 100;
+    for (let i = 0; i < amount; i++) {
+        const progress = i / (amount - 1);
+        const randomOffset = i === 0 || i === amount - 1 ? 0 : (Math.random() - 0.5) * 200;
+        const coinX = firstCoinX + (lastCoinX - firstCoinX) * progress + randomOffset;
+        const coinY = 120 + Math.random() * 180;
+        coins.push(new Coin(coinX, coinY));
+    }
+    return coins;
 }

@@ -16,6 +16,18 @@ class Character extends MovableObject {
         'img/2_character_pepe/1_idle/idle/I-9.png',
         'img/2_character_pepe/1_idle/idle/I-10.png',
     ]
+    IMAGES_LONG_IDLE = [
+        'img/2_character_pepe/1_idle/long_idle/I-11.png',
+        'img/2_character_pepe/1_idle/long_idle/I-12.png',
+        'img/2_character_pepe/1_idle/long_idle/I-13.png',
+        'img/2_character_pepe/1_idle/long_idle/I-14.png',
+        'img/2_character_pepe/1_idle/long_idle/I-15.png',
+        'img/2_character_pepe/1_idle/long_idle/I-16.png',
+        'img/2_character_pepe/1_idle/long_idle/I-17.png',
+        'img/2_character_pepe/1_idle/long_idle/I-18.png',
+        'img/2_character_pepe/1_idle/long_idle/I-19.png',
+        'img/2_character_pepe/1_idle/long_idle/I-20.png'
+    ];
 
     IMAGES_WALKING = [
         "img/2_character_pepe/2_walk/W-21.png",
@@ -60,10 +72,16 @@ class Character extends MovableObject {
     deathAnimationStarted = false;
     collectedBottles = 0;
     maxBottles = 5;
+    collectedCoins = 0;
+    maxCoins = 5;
     jumpSoundIndex = 0;
     isKnockedBack = false;
     knockbackDirection = 0;
     knockbackTimeout;
+    lastActionTime = Date.now();
+    longIdleDelay = 10000;
+    lastIdleFrameTime = 0;
+    idleAnimationDelay = 100;
 
     constructor() {
         super().loadImage("img/2_character_pepe/2_walk/W-21.png");
@@ -72,12 +90,14 @@ class Character extends MovableObject {
         this.loadImages(this.IMAGES_DEAD);
         this.loadImages(this.IMAGES_HURT);
         this.loadImages(this.IMAGES_IDLE)
+        this.loadImages(this.IMAGES_LONG_IDLE);
         this.applyGravity();
         this.animate();
     }
 
     hit() {
         if (this.isDead()) return;
+        this.resetIdleTimer();
         super.hit();
         this.playCurrentHitSound();
         audioManager.playSound('characterHit');
@@ -107,6 +127,18 @@ class Character extends MovableObject {
 
     getBottlePercentage() {
         return this.collectedBottles / this.maxBottles * 100;
+    }
+
+    canCollectCoin() {
+        return this.collectedCoins < this.maxCoins;
+    }
+
+    collectCoin() {
+        if (this.canCollectCoin()) this.collectedCoins++;
+    }
+
+    getCoinPercentage() {
+        return this.collectedCoins / this.maxCoins * 100;
     }
 
     handleDeath() {
@@ -159,6 +191,7 @@ class Character extends MovableObject {
     }
 
     knockBackFrom(enemy) {
+        this.resetIdleTimer();
         clearTimeout(this.knockbackTimeout);
         this.isKnockedBack = true;
         this.knockbackDirection = this.x < enemy.x ? -1 : 1;
@@ -202,10 +235,33 @@ class Character extends MovableObject {
 
     playCharacterAnimation() {
         if (this.isDead() || this.isFrozen) return;
+        this.updateIdleTimer();
         if (this.isHurt()) this.playAnimation(this.IMAGES_HURT);
         else if (this.isAboveGround()) this.playAnimation(this.IMAGES_JUMPING);
         else if (this.world.keyboard.RIGHT || this.world.keyboard.LEFT) {
             this.playAnimation(this.IMAGES_WALKING);
-        } else this.playAnimation(this.IMAGES_IDLE);
+        } else if (this.isLongIdle()) this.playAnimation(this.IMAGES_LONG_IDLE);
+        else this.playIdleAnimation();
+    }
+
+    playIdleAnimation() {
+        if (Date.now() - this.lastIdleFrameTime < this.idleAnimationDelay) return;
+        this.playAnimation(this.IMAGES_IDLE);
+        this.lastIdleFrameTime = Date.now();
+    }
+
+    updateIdleTimer() {
+        const keyboard = this.world.keyboard;
+        if (keyboard.LEFT || keyboard.RIGHT || keyboard.SPACE || keyboard.D) {
+            this.resetIdleTimer();
+        }
+    }
+
+    resetIdleTimer() {
+        this.lastActionTime = Date.now();
+    }
+
+    isLongIdle() {
+        return Date.now() - this.lastActionTime >= this.longIdleDelay;
     }
 }
