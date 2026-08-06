@@ -23,10 +23,16 @@ class World {
     animationFrame;
     gameOverTimeout;
 
+    /**
+     * Creates the game world and starts rendering and collision checks.
+     * @param {HTMLCanvasElement} canvas - Game canvas element.
+     * @param {Keyboard} keyboard - Current keyboard state.
+     */
     constructor(canvas, keyboard) {
         this.ctx = canvas.getContext("2d");
         this.canvas = canvas;
         this.keyboard = keyboard;
+        this.itemHandler = new WorldItemHandler(this);
         this.loadGameOverImage();
         this.loadGameWonImage();
         this.draw();
@@ -34,34 +40,40 @@ class World {
         this.checkCollisions();
     }
 
+    /** Connects the character and endboss with this world. */
     setWorld() {
         this.character.world = this;
         const endboss = this.level.enemies.find((enemy) => enemy instanceof Endboss);
         if (endboss) endboss.world = this;
     }
 
+    /** Loads the game-over screen image. */
     loadGameOverImage() {
         this.gameOverImage.src = 'img/10_win_loss/You lost.png';
     }
 
+    /** Loads the game-won screen image. */
     loadGameWonImage() {
         this.gameWonImage.src = 'img/10_win_loss/You won A.png';
     }
 
+    /** Starts collision checks and bottle throwing intervals. */
     checkCollisions() {
         this.collisionInterval = setInterval(() => this.runCollisionChecks(), 1000 / 60);
         this.bottleThrowInterval = setInterval(() => this.checkThrowObjects(), 100);
     }
 
+    /** Runs all collision and pickup checks for one game tick. */
     runCollisionChecks() {
         this.level.enemies.forEach((enemy) => this.checkEnemyCollision(enemy));
-        this.checkBottlePickups();
-        this.checkCoinPickups();
-        this.checkBottleCollisions();
-        this.removeExpiredBottles();
+        this.itemHandler.checkBottlePickups();
+        this.itemHandler.checkCoinPickups();
+        this.itemHandler.checkBottleCollisions();
+        this.itemHandler.removeExpiredBottles();
         this.checkEndbossVisibility();
     }
 
+    /** Freezes the game and schedules the game-over screen. */
     startGameOver() {
         if (this.gameOver || this.gameWon) return;
         this.gameOver = true;
@@ -70,6 +82,7 @@ class World {
         this.gameOverTimeout = setTimeout(() => this.showGameOverScreen(), 1000);
     }
 
+    /** Stops game intervals and freezes all moving objects. */
     freezeGame() {
         clearInterval(this.collisionInterval);
         clearInterval(this.bottleThrowInterval);
@@ -78,12 +91,14 @@ class World {
         this.throwableObjects.forEach((bottle) => bottle.freeze());
     }
 
+    /** Displays the game-over screen and its controls. */
     showGameOverScreen() {
         this.gameOverScreenVisible = true;
         audioManager.playSound('gameOver');
         showEndScreenControls(false);
     }
 
+    /** Freezes the game after the endboss is defeated. */
     startGameWon() {
         if (this.gameWon || this.gameOver) return;
         this.gameWon = true;
@@ -91,6 +106,7 @@ class World {
         this.freezeGame();
     }
 
+    /** Displays the game-won screen and its controls. */
     showGameWonScreen() {
         if (!this.gameWon || this.gameWonScreenVisible) return;
         this.gameWonScreenVisible = true;
@@ -98,6 +114,7 @@ class World {
         showEndScreenControls(true);
     }
 
+    /** Starts the endboss alert when it enters the viewport. */
     checkEndbossVisibility() {
         const endboss = this.level.enemies.find((enemy) => enemy instanceof Endboss);
         if (endboss && this.isVisible(endboss)) {
@@ -106,15 +123,29 @@ class World {
         }
     }
 
+    /**
+     * Checks whether an object is visible inside the canvas.
+     * @param {DrawableObject} movableObject - Object to test.
+     * @returns {boolean} Whether the object is visible.
+     */
     isVisible(movableObject) {
         const screenX = movableObject.x + this.camera_x;
         return screenX < this.canvas.width && screenX + movableObject.width > 0;
     }
 
+    /**
+     * Checks whether an enemy is a normal or small chicken.
+     * @param {MovableObject} enemy - Enemy to classify.
+     * @returns {boolean} Whether the enemy is a chicken.
+     */
     isChicken(enemy) {
         return enemy instanceof Chicken || enemy instanceof ChickenSmall;
     }
 
+    /**
+     * Handles stomp or damage collisions with one enemy.
+     * @param {MovableObject} enemy - Enemy to check.
+     */
     checkEnemyCollision(enemy) {
         if (this.isChicken(enemy) && !enemy.isDead() && this.character.isJumpingOn(enemy)) {
             this.stompChicken(enemy);
@@ -124,6 +155,10 @@ class World {
         }
     }
 
+    /**
+     * Damages and optionally knocks back the character.
+     * @param {MovableObject} enemy - Enemy causing damage.
+     */
     damageCharacter(enemy) {
         this.character.hit();
         const causesKnockback = this.isChicken(enemy) || enemy instanceof Endboss;
@@ -134,100 +169,26 @@ class World {
         this.healthBar.setPercentage(this.character.energy);
     }
 
+    /**
+     * Defeats a stomped chicken and bounces the character.
+     * @param {Chicken|ChickenSmall} chicken - Stomped chicken.
+     */
     stompChicken(chicken) {
         this.killChicken(chicken);
         audioManager.playSound('stompSplash');
         this.character.bounceAfterStomp();
     }
 
+    /**
+     * Starts chicken death and schedules its removal.
+     * @param {Chicken|ChickenSmall} chicken - Chicken to defeat.
+     */
     killChicken(chicken) {
         chicken.die();
         setTimeout(() => this.removeEnemy(chicken), 3000);
     }
 
-    checkBottleCollisions() {
-        this.throwableObjects.forEach((bottle) => {
-            this.level.enemies.forEach((enemy) => {
-                this.handleBottleEnemyCollision(bottle, enemy);
-            });
-        });
-    }
-
-    handleBottleEnemyCollision(bottle, enemy) {
-        if (this.canBottleHitEnemy(bottle, enemy)) this.hitEnemyWithBottle(bottle, enemy);
-        else if (this.canEndbossBlockBottle(bottle, enemy)) bottle.bounceOffEndboss();
-    }
-
-    canEndbossBlockBottle(bottle, enemy) {
-        return enemy instanceof Endboss && !enemy.isDead() && !enemy.canBeHit() &&
-            bottle.canHitEnemy() && bottle.isColliding(enemy);
-    }
-
-    canBottleHitEnemy(bottle, enemy) {
-        const canBeHit = this.isChicken(enemy) ||
-            enemy instanceof Endboss && enemy.canBeHit();
-        return canBeHit &&
-            !enemy.isDead() && bottle.canHitEnemy() && bottle.isColliding(enemy);
-    }
-
-    hitEnemyWithBottle(bottle, enemy) {
-        bottle.hitEnemy();
-        if (this.isChicken(enemy)) this.killChicken(enemy);
-        else this.hitEndboss(enemy);
-    }
-
-    hitEndboss(endboss) {
-        endboss.hit();
-        this.endbossBar.setPercentage(endboss.getEnergyPercentage());
-        if (endboss.isDead()) this.startGameWon();
-    }
-
-    removeEnemy(enemy) {
-        this.level.enemies = this.level.enemies.filter((currentEnemy) => currentEnemy !== enemy);
-    }
-
-    removeExpiredBottles() {
-        this.throwableObjects = this.throwableObjects.filter((bottle) => !bottle.isExpired);
-    }
-
-    checkBottlePickups() {
-        this.level.bottles.forEach((bottle) => {
-            if (this.canCollectBottle(bottle)) this.collectBottle(bottle);
-        });
-    }
-
-    canCollectBottle(bottle) {
-        return this.character.canCollectBottle() && this.character.isColliding(bottle);
-    }
-
-    collectBottle(bottle) {
-        this.character.collectBottle();
-        audioManager.playSound('bottlePickup');
-        this.level.bottles = this.level.bottles.filter((item) => item !== bottle);
-        this.updateBottleBar();
-    }
-
-    updateBottleBar() {
-        this.bottleBar.setPercentage(this.character.getBottlePercentage());
-    }
-
-    checkCoinPickups() {
-        this.level.coins.forEach((coin) => {
-            if (this.canCollectCoin(coin)) this.collectCoin(coin);
-        });
-    }
-
-    canCollectCoin(coin) {
-        return this.character.canCollectCoin() && this.character.isColliding(coin);
-    }
-
-    collectCoin(coin) {
-        this.character.collectCoin();
-        audioManager.playSound('coinPickup');
-        this.level.coins = this.level.coins.filter((item) => item !== coin);
-        this.coinBar.setPercentage(this.character.getCoinPercentage());
-    }
-
+    /** Throws a bottle when input, inventory and cooldown allow it. */
     checkThrowObjects() {
         if (this.keyboard.D && this.canThrowBottle()) {
             let bottle = new ThrowableObject(
@@ -235,11 +196,15 @@ class World {
             );
             this.throwableObjects.push(bottle);
             this.character.useBottle();
-            this.updateBottleBar();
+            this.itemHandler.updateBottleBar();
             this.lastBottleThrow = new Date().getTime();
         }
     }
 
+    /**
+     * Calculates bottle spawn position from facing direction.
+     * @returns {number} Horizontal bottle starting position.
+     */
     getBottleStartX() {
         if (this.character.otherDirection) {
             return this.character.x - 50;
@@ -247,11 +212,16 @@ class World {
         return this.character.x + 100;
     }
 
+    /**
+     * Checks bottle inventory and throw cooldown.
+     * @returns {boolean} Whether a bottle can be thrown.
+     */
     canThrowBottle() {
         const timeSinceLastThrow = new Date().getTime() - this.lastBottleThrow;
         return this.character.hasBottle() && timeSinceLastThrow >= this.bottleThrowCooldown;
     }
 
+    /** Draws the current frame and requests the next one. */
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.drawWorld();
@@ -259,6 +229,7 @@ class World {
         this.requestNextFrame();
     }
 
+    /** Draws all camera-relative game-world objects. */
     drawWorld() {
         this.ctx.translate(this.camera_x, 0);
         this.addObjectsToMap(this.level.backgroundObjects);
@@ -271,6 +242,7 @@ class World {
         this.ctx.translate(-this.camera_x, 0)
     }
 
+    /** Draws status bars and active end screens. */
     drawInterface() {
         this.addToMap(this.healthBar)
         this.addToMap(this.coinBar)
@@ -280,6 +252,10 @@ class World {
         if (this.gameWonScreenVisible) this.drawEndScreen(this.gameWonImage);
     }
 
+    /**
+     * Draws a dimmed game result screen.
+     * @param {HTMLImageElement} image - Result image to display.
+     */
     drawEndScreen(image) {
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -290,10 +266,12 @@ class World {
         this.ctx.drawImage(image, imageX, imageY, imageWidth, imageHeight);
     }
 
+    /** Requests another animation frame while the world is active. */
     requestNextFrame() {
         if (!this.stopped) this.animationFrame = requestAnimationFrame(() => this.draw());
     }
 
+    /** Stops rendering, timers and all active game objects. */
     stopGame() {
         this.stopped = true;
         cancelAnimationFrame(this.animationFrame);
@@ -301,17 +279,23 @@ class World {
         this.stopGameObjects();
     }
 
+    /** Clears world collision, throw and game-over timers. */
     clearGameTimers() {
         clearInterval(this.collisionInterval);
         clearInterval(this.bottleThrowInterval);
         clearTimeout(this.gameOverTimeout);
     }
 
+    /** Stops the character, enemies and thrown bottles. */
     stopGameObjects() {
         const objects = [this.character, ...this.level.enemies, ...this.throwableObjects];
         objects.forEach((object) => this.stopGameObject(object));
     }
 
+    /**
+     * Freezes an object and clears its known animation intervals.
+     * @param {MovableObject} object - Game object to stop.
+     */
     stopGameObject(object) {
         if (object.freeze) object.freeze();
         clearInterval(object.movementInterval);
@@ -319,12 +303,20 @@ class World {
         clearInterval(object.deathAnimationInterval);
     }
 
+    /**
+     * Draws a collection of objects on the canvas.
+     * @param {DrawableObject[]} objects - Objects to draw.
+     */
     addObjectsToMap(objects) {
         objects.forEach(o => {
             this.addToMap(o);
         })
     }
 
+    /**
+     * Draws one object with optional horizontal mirroring.
+     * @param {DrawableObject} mo - Object to draw.
+     */
     addToMap(mo) {
         if (mo.otherDirection) {
             this.flipImage(mo);
@@ -337,6 +329,10 @@ class World {
         }
     }
 
+    /**
+     * Mirrors the canvas and object before drawing.
+     * @param {DrawableObject} mo - Object to mirror.
+     */
     flipImage(mo) {
         this.ctx.save();
         this.ctx.translate(mo.width, 0)
@@ -344,6 +340,10 @@ class World {
         mo.x = mo.x * -1;
     }
 
+    /**
+     * Restores canvas and object after mirrored drawing.
+     * @param {DrawableObject} mo - Mirrored object.
+     */
     flipImageBack(mo) {
         mo.x = mo.x * -1;
         this.ctx.restore();

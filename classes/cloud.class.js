@@ -1,4 +1,8 @@
 class Cloud extends MovableObject {
+    /**
+     * Creates a moving cloud.
+     * @param {number} [x] - Optional horizontal starting position.
+     */
     constructor(x = Math.random() * 500) {
         super().loadImage("img/5_background/layers/4_clouds/1.png");
 
@@ -9,6 +13,7 @@ class Cloud extends MovableObject {
         this.animate();
     }
 
+    /** Starts the continuous cloud movement. */
     animate() {
         this.moveLeft();
     }

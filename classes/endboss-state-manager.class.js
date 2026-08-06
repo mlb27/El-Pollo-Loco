@@ -1,8 +1,13 @@
 class EndbossStateManager {
+    /**
+     * Creates a state manager for an endboss.
+     * @param {Endboss} endboss - Endboss whose state is managed.
+     */
     constructor(endboss) {
         this.endboss = endboss;
     }
 
+    /** Saves the current interruptible endboss state. */
     save() {
         if (this.endboss.currentState === 'hurt' || this.endboss.currentState === 'dead') return;
         this.snapshot = {
@@ -13,10 +18,12 @@ class EndbossStateManager {
         };
     }
 
+    /** Clears the stored endboss state snapshot. */
     clear() {
         this.snapshot = null;
     }
 
+    /** Resumes a stored state or continues the walking timer. */
     resume() {
         if (!this.endboss.canAct()) return;
         const snapshot = this.snapshot;
@@ -25,6 +32,10 @@ class EndbossStateManager {
         else this.endboss.resumeWalkingTimer();
     }
 
+    /**
+     * Selects the correct resume handler for a stored state.
+     * @param {Object} snapshot - Stored endboss state.
+     */
     resumeSavedState(snapshot) {
         if (snapshot.state === 'attacking') this.resumeAttack(snapshot);
         else if (snapshot.state === 'jumping') this.resumeAirState(snapshot, 'jumping', 'moveAttackJump');
@@ -35,6 +46,10 @@ class EndbossStateManager {
         else this.endboss.resumeWalkingTimer();
     }
 
+    /**
+     * Resumes an interrupted attack animation.
+     * @param {Object} snapshot - Stored attack state.
+     */
     resumeAttack(snapshot) {
         this.endboss.attackDirection = snapshot.attackDirection;
         this.resumeFrameState(snapshot, {
@@ -45,6 +60,12 @@ class EndbossStateManager {
         });
     }
 
+    /**
+     * Resumes an interrupted airborne state.
+     * @param {Object} snapshot - Stored airborne state.
+     * @param {string} state - State name to restore.
+     * @param {string} movementMethod - Movement method to continue.
+     */
     resumeAirState(snapshot, state, movementMethod) {
         this.endboss.currentState = state;
         this.endboss.speedY = snapshot.speedY;
@@ -55,6 +76,10 @@ class EndbossStateManager {
         }, 1000 / 60);
     }
 
+    /**
+     * Resumes an interrupted landing animation.
+     * @param {Object} snapshot - Stored landing state.
+     */
     resumeLanding(snapshot) {
         this.resumeFrameState(snapshot, {
             state: 'landing',
@@ -64,6 +89,10 @@ class EndbossStateManager {
         });
     }
 
+    /**
+     * Resumes an interrupted alert animation.
+     * @param {Object} snapshot - Stored alert state.
+     */
     resumeAlert(snapshot) {
         this.resumeFrameState(snapshot, {
             state: 'alert',
@@ -73,6 +102,11 @@ class EndbossStateManager {
         });
     }
 
+    /**
+     * Restores a timed frame-animation state.
+     * @param {Object} snapshot - Stored frame state.
+     * @param {Object} config - Animation and callback configuration.
+     */
     resumeFrameState(snapshot, config) {
         this.endboss.currentState = config.state;
         this.endboss.animation.start(config.images, {

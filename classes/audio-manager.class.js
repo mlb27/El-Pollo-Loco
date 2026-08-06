@@ -34,32 +34,49 @@ class AudioManager {
         gameWon: new Audio('audio/game-youwin.mp3')
     };
 
+    /** Creates the audio manager and restores saved sound settings. */
     constructor() {
         this.playBackgroundMusic = this.playBackgroundMusic.bind(this);
         this.loadSoundSettings();
         this.updateAudioState();
     }
 
+    /** Loads music and sound-effect settings from local storage. */
     loadSoundSettings() {
         this.soundEffectsEnabled = this.getSoundSetting('soundEffectsEnabled');
         this.musicEnabled = this.getSoundSetting('musicEnabled');
     }
 
+    /**
+     * Reads a saved audio setting.
+     * @param {string} settingName - Local-storage setting name.
+     * @returns {boolean} Whether the selected audio group is enabled.
+     */
     getSoundSetting(settingName) {
         const savedSetting = localStorage.getItem(settingName);
         if (savedSetting !== null) return savedSetting === 'true';
         return this.getLegacySoundSetting();
     }
 
+    /**
+     * Reads the legacy combined sound setting.
+     * @returns {boolean} Whether legacy sound is enabled.
+     */
     getLegacySoundSetting() {
         const savedSetting = localStorage.getItem('soundEnabled');
         return savedSetting === null || savedSetting === 'true';
     }
 
+    /**
+     * Persists an audio setting in local storage.
+     * @param {string} settingName - Local-storage setting name.
+     * @param {boolean} settingValue - Setting value to save.
+     */
     saveSoundSetting(settingName, settingValue) {
         localStorage.setItem(settingName, settingValue);
     }
 
+    /** Configures and starts the looping background music. */
     startBackgroundMusic() {
         const backgroundMusic = this.sounds.backgroundMusic;
         backgroundMusic.loop = true;
@@ -67,65 +84,83 @@ class AudioManager {
         this.resumeBackgroundMusic();
     }
 
+    /** Pauses the background music. */
     pauseBackgroundMusic() {
         this.sounds.backgroundMusic.pause();
     }
 
+    /** Resumes background music or waits for user interaction. */
     resumeBackgroundMusic() {
         const backgroundMusic = this.sounds.backgroundMusic;
         backgroundMusic.play().catch(() => this.waitForMusicInteraction());
     }
 
+    /** Registers fallback listeners for browser audio permission. */
     waitForMusicInteraction() {
         document.addEventListener('pointerdown', this.playBackgroundMusic, { once: true });
         document.addEventListener('keydown', this.playBackgroundMusic, { once: true });
     }
 
+    /** Plays background music after an allowed user interaction. */
     playBackgroundMusic() {
         this.sounds.backgroundMusic.play();
         document.removeEventListener('pointerdown', this.playBackgroundMusic);
         document.removeEventListener('keydown', this.playBackgroundMusic);
     }
 
+    /** Toggles sound effects and saves the selected state. */
     toggleSoundEffects() {
         this.soundEffectsEnabled = !this.soundEffectsEnabled;
         this.saveSoundSetting('soundEffectsEnabled', this.soundEffectsEnabled);
         this.updateSoundEffectsState();
     }
 
+    /** Toggles music and saves the selected state. */
     toggleMusic() {
         this.musicEnabled = !this.musicEnabled;
         this.saveSoundSetting('musicEnabled', this.musicEnabled);
         this.updateMusicState();
     }
 
+    /** Applies the current music and sound-effect settings. */
     updateAudioState() {
         this.updateSoundEffectsState();
         this.updateMusicState();
     }
 
+    /** Applies the enabled state to every sound effect. */
     updateSoundEffectsState() {
         const soundEffects = this.getSoundEffects();
         soundEffects.forEach((sound) => sound.muted = !this.soundEffectsEnabled);
         if (!this.soundEffectsEnabled) this.stopSoundEffects();
     }
 
+    /** Applies the enabled state to background music. */
     updateMusicState() {
         this.sounds.backgroundMusic.muted = !this.musicEnabled;
     }
 
+    /**
+     * Returns all audio elements except background music.
+     * @returns {HTMLAudioElement[]} Available sound effects.
+     */
     getSoundEffects() {
         return Object.entries(this.sounds)
             .filter(([soundName]) => soundName !== 'backgroundMusic')
             .map(([, sound]) => sound);
     }
 
+    /** Stops and resets every active sound effect. */
     stopSoundEffects() {
         Object.entries(this.sounds)
             .filter(([soundName]) => soundName !== 'backgroundMusic')
             .forEach(([, sound]) => this.stopAudio(sound));
     }
 
+    /**
+     * Plays a sound effect from its beginning.
+     * @param {string} soundName - Registered sound-effect name.
+     */
     playSound(soundName) {
         const sound = this.sounds[soundName];
         if (!sound || !this.soundEffectsEnabled) return;
@@ -133,6 +168,10 @@ class AudioManager {
         sound.play();
     }
 
+    /**
+     * Starts a registered sound effect in a loop.
+     * @param {string} soundName - Registered sound-effect name.
+     */
     playLoopingSound(soundName) {
         const sound = this.sounds[soundName];
         if (!sound || !this.soundEffectsEnabled || !sound.paused) return;
@@ -140,6 +179,10 @@ class AudioManager {
         sound.play();
     }
 
+    /**
+     * Stops a registered looping sound effect.
+     * @param {string} soundName - Registered sound-effect name.
+     */
     stopLoopingSound(soundName) {
         const sound = this.sounds[soundName];
         if (!sound) return;
@@ -147,11 +190,19 @@ class AudioManager {
         this.stopAudio(sound);
     }
 
+    /**
+     * Stops a registered sound effect.
+     * @param {string} soundName - Registered sound-effect name.
+     */
     stopSound(soundName) {
         const sound = this.sounds[soundName];
         if (sound) this.stopAudio(sound);
     }
 
+    /**
+     * Pauses and resets an audio element.
+     * @param {HTMLAudioElement} sound - Audio element to stop.
+     */
     stopAudio(sound) {
         sound.pause();
         sound.currentTime = 0;

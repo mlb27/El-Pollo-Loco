@@ -4,6 +4,10 @@ class Bottle extends DrawableObject {
         'img/6_salsa_bottle/2_salsa_bottle_on_ground.png'
     ];
 
+    /**
+     * Creates a collectible bottle at the given world position.
+     * @param {number} x - Horizontal world position.
+     */
     constructor(x) {
         super();
         const imageIndex = Math.floor(Math.random() * this.IMAGES_BOTTLE.length);

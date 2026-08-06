@@ -83,6 +83,7 @@ class Character extends MovableObject {
     lastIdleFrameTime = 0;
     idleAnimationDelay = 100;
 
+    /** Creates the playable character and starts its physics and animations. */
     constructor() {
         super().loadImage("img/2_character_pepe/2_walk/W-21.png");
         this.loadImages(this.IMAGES_WALKING);
@@ -95,6 +96,7 @@ class Character extends MovableObject {
         this.animate();
     }
 
+    /** Damages the character and handles hit sounds or death. */
     hit() {
         if (this.isDead()) return;
         this.resetIdleTimer();
@@ -104,49 +106,75 @@ class Character extends MovableObject {
         if (this.isDead()) this.handleDeath();
     }
 
+    /** Plays the sound assigned to the current damage level. */
     playCurrentHitSound() {
         const hitNumber = (100 - this.energy) / 20;
         if (hitNumber <= 4) audioManager.playSound(`characterHit${hitNumber}`);
     }
 
+    /**
+     * Checks whether another bottle can be collected.
+     * @returns {boolean} Whether bottle storage has free capacity.
+     */
     canCollectBottle() {
         return this.collectedBottles < this.maxBottles;
     }
 
+    /** Adds one bottle when storage has free capacity. */
     collectBottle() {
         if (this.canCollectBottle()) this.collectedBottles++;
     }
 
+    /**
+     * Checks whether a throwable bottle is available.
+     * @returns {boolean} Whether at least one bottle is stored.
+     */
     hasBottle() {
         return this.collectedBottles > 0;
     }
 
+    /** Removes one bottle from the inventory. */
     useBottle() {
         if (this.hasBottle()) this.collectedBottles--;
     }
 
+    /**
+     * Calculates the filled bottle-bar percentage.
+     * @returns {number} Bottle inventory percentage.
+     */
     getBottlePercentage() {
         return this.collectedBottles / this.maxBottles * 100;
     }
 
+    /**
+     * Checks whether another coin can be collected.
+     * @returns {boolean} Whether the coin bar is not full.
+     */
     canCollectCoin() {
         return this.collectedCoins < this.maxCoins;
     }
 
+    /** Adds one coin when the coin bar is not full. */
     collectCoin() {
         if (this.canCollectCoin()) this.collectedCoins++;
     }
 
+    /**
+     * Calculates the filled coin-bar percentage.
+     * @returns {number} Collected coin percentage.
+     */
     getCoinPercentage() {
         return this.collectedCoins / this.maxCoins * 100;
     }
 
+    /** Starts character death audio, animation and game-over flow. */
     handleDeath() {
         audioManager.playSound('characterDied');
         this.startDeathAnimation();
         this.world.startGameOver();
     }
 
+    /** Starts the non-looping character death animation once. */
     startDeathAnimation() {
         if (this.deathAnimationStarted) return;
         this.deathAnimationStarted = true;
@@ -155,6 +183,7 @@ class Character extends MovableObject {
         this.deathAnimationInterval = setInterval(() => this.playDeathFrame(), 160);
     }
 
+    /** Displays the next death frame and stops on the last frame. */
     playDeathFrame() {
         const lastImageIndex = this.IMAGES_DEAD.length - 1;
         const path = this.IMAGES_DEAD[this.currentImage];
@@ -166,6 +195,7 @@ class Character extends MovableObject {
         }
     }
 
+    /** Bounces the character and briefly protects it after a stomp. */
     bounceAfterStomp() {
         clearTimeout(this.stompProtectionTimeout);
         this.stompProtectionActive = true;
@@ -175,11 +205,13 @@ class Character extends MovableObject {
         }, 500);
     }
 
+    /** Starts character movement and frame animation loops. */
     animate() {
         this.movementInterval = setInterval(() => this.moveCharacter(), 1000 / 60);
         this.animationInterval = setInterval(() => this.playCharacterAnimation(), 100);
     }
 
+    /** Applies input or knockback movement and updates the camera. */
     moveCharacter() {
         if (this.isFrozen) return;
         if (this.isKnockedBack) this.moveKnockback();
@@ -190,6 +222,10 @@ class Character extends MovableObject {
         this.world.camera_x = -this.x + 100;
     }
 
+    /**
+     * Starts knockback away from the colliding enemy.
+     * @param {MovableObject} enemy - Enemy causing the knockback.
+     */
     knockBackFrom(enemy) {
         this.resetIdleTimer();
         clearTimeout(this.knockbackTimeout);
@@ -199,16 +235,19 @@ class Character extends MovableObject {
         this.knockbackTimeout = setTimeout(() => this.stopKnockback(), 500);
     }
 
+    /** Moves the character during active knockback. */
     moveKnockback() {
         this.x += this.knockbackDirection;
         this.x = Math.max(0, Math.min(this.x, this.world.level.level_end_x));
     }
 
+    /** Ends the active character knockback. */
     stopKnockback() {
         this.isKnockedBack = false;
         this.knockbackDirection = 0;
     }
 
+    /** Applies left and right keyboard movement. */
     moveHorizontally() {
         if (this.world.keyboard.RIGHT && this.x < this.world.level.level_end_x) {
             this.moveRight();
@@ -220,6 +259,7 @@ class Character extends MovableObject {
         }
     }
 
+    /** Starts a jump when the jump key is pressed on the ground. */
     jumpIfPossible() {
         if (this.world.keyboard.SPACE && !this.isAboveGround()) {
             this.jump();
@@ -227,12 +267,14 @@ class Character extends MovableObject {
         }
     }
 
+    /** Plays the next sound in the rotating jump-sound sequence. */
     playNextJumpSound() {
         const soundNumber = this.jumpSoundIndex + 1;
         audioManager.playSound(`characterJump${soundNumber}`);
         this.jumpSoundIndex = (this.jumpSoundIndex + 1) % 3;
     }
 
+    /** Selects the animation matching the current character state. */
     playCharacterAnimation() {
         if (this.isDead() || this.isFrozen) return;
         this.updateIdleTimer();
@@ -244,12 +286,14 @@ class Character extends MovableObject {
         else this.playIdleAnimation();
     }
 
+    /** Advances the regular idle animation at its configured speed. */
     playIdleAnimation() {
         if (Date.now() - this.lastIdleFrameTime < this.idleAnimationDelay) return;
         this.playAnimation(this.IMAGES_IDLE);
         this.lastIdleFrameTime = Date.now();
     }
 
+    /** Resets inactivity time while a gameplay key is pressed. */
     updateIdleTimer() {
         const keyboard = this.world.keyboard;
         if (keyboard.LEFT || keyboard.RIGHT || keyboard.SPACE || keyboard.D) {
@@ -257,10 +301,15 @@ class Character extends MovableObject {
         }
     }
 
+    /** Stores the current time as the latest character action. */
     resetIdleTimer() {
         this.lastActionTime = Date.now();
     }
 
+    /**
+     * Checks whether the long-idle delay has elapsed.
+     * @returns {boolean} Whether the sleep animation should play.
+     */
     isLongIdle() {
         return Date.now() - this.lastActionTime >= this.longIdleDelay;
     }

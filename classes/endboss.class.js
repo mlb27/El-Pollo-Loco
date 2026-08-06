@@ -14,6 +14,7 @@ class Endboss extends MovableObject {
     attackDirection = -1;
     combatStarted = false;
 
+    /** Creates the endboss with animation and state controllers. */
     constructor() {
         super();
         this.animation = new EndbossAnimation(this);
@@ -25,6 +26,7 @@ class Endboss extends MovableObject {
         this.height = 400;
     }
 
+    /** Starts the endboss spawn and alert sequence once. */
     startAlert() {
         if (this.alertStarted || this.isDead()) return;
         this.alertStarted = true;
@@ -38,6 +40,7 @@ class Endboss extends MovableObject {
         }, 1000);
     }
 
+    /** Holds the final alert frame before walking starts. */
     holdAlertFrame() {
         this.alertHoldTimeout = setTimeout(() => {
             this.alertFinished = true;
@@ -45,6 +48,10 @@ class Endboss extends MovableObject {
         }, 500);
     }
 
+    /**
+     * Starts walking and schedules the next attack.
+     * @param {boolean} [resetAttackTimer=true] - Whether to restart the attack timer.
+     */
     startWalking(resetAttackTimer = true) {
         if (!this.canAct()) return;
         this.stopActionTimers();
@@ -56,11 +63,13 @@ class Endboss extends MovableObject {
         this.scheduleAttack();
     }
 
+    /** Schedules the next attack using the current deadline. */
     scheduleAttack() {
         const attackDelay = Math.max(0, this.attackDeadline - Date.now());
         this.walkTimeout = setTimeout(() => this.startAttack(), attackDelay);
     }
 
+    /** Moves toward the character while respecting safe distance. */
     moveTowardsCharacter() {
         this.updateDirection();
         this.updateCombatState();
@@ -70,6 +79,7 @@ class Endboss extends MovableObject {
         else this.moveLeft();
     }
 
+    /** Updates the facing direction toward the character. */
     updateDirection() {
         if (!this.world) return;
         const characterCenter = this.world.character.x + this.world.character.width / 2;
@@ -77,12 +87,20 @@ class Endboss extends MovableObject {
         this.otherDirection = characterCenter > endbossCenter;
     }
 
+    /**
+     * Calculates horizontal distance to the character.
+     * @returns {number} Distance between endboss and character.
+     */
     getDistanceToCharacter() {
         const character = this.world.character;
         if (this.otherDirection) return character.x - (this.x + this.width);
         return this.x - (character.x + character.width);
     }
 
+    /**
+     * Maintains safe distance when the character is near a map edge.
+     * @returns {boolean} Whether regular movement was intercepted.
+     */
     maintainSafeDistance() {
         if (!this.isCharacterNearMapEdge()) return false;
         const distance = this.getDistanceToCharacter();
@@ -92,6 +110,10 @@ class Endboss extends MovableObject {
         return true;
     }
 
+    /**
+     * Moves away until the configured safe distance is restored.
+     * @param {number} distance - Current distance to the character.
+     */
     moveAwayFromCharacter(distance) {
         this.animation.startWalkAnimation();
         const movement = Math.min(this.speed, this.safeDistance - distance);
@@ -100,6 +122,10 @@ class Endboss extends MovableObject {
         this.x = Math.max(0, Math.min(this.x, this.getMaximumX()));
     }
 
+    /**
+     * Checks whether the character is near either protected map edge.
+     * @returns {boolean} Whether edge-distance protection is active.
+     */
     isCharacterNearMapEdge() {
         const characterX = this.world.character.x;
         const levelEndX = this.world.level.level_end_x;
@@ -108,12 +134,17 @@ class Endboss extends MovableObject {
         return nearSpawn || nearMapEnd;
     }
 
+    /**
+     * Calculates the maximum horizontal endboss position.
+     * @returns {number} Maximum allowed world position.
+     */
     getMaximumX() {
         if (!this.world) return this.maximumX;
         const safeX = this.world.level.level_end_x + this.world.character.width + this.safeDistance;
         return Math.max(this.maximumX, safeX);
     }
 
+    /** Starts or briefly delays the next endboss attack. */
     startAttack() {
         if (!this.canAct()) return;
         this.updateDirection();
@@ -128,22 +159,29 @@ class Endboss extends MovableObject {
         });
     }
 
+    /**
+     * Checks whether combat has started and an attack may begin.
+     * @returns {boolean} Whether the attack may start.
+     */
     canStartAttack() {
         this.updateCombatState();
         return this.combatStarted;
     }
 
+    /** Activates combat permanently after the character approaches. */
     updateCombatState() {
         if (this.combatStarted) return;
         if (this.getDistanceToCharacter() <= this.safeDistance) this.combatStarted = true;
     }
 
+    /** Delays an attack until combat has been activated. */
     delayAttack() {
         this.attackDeadline = Date.now() + 100;
         if (this.currentState === 'walking') this.scheduleAttack();
         else this.startWalking(false);
     }
 
+    /** Starts the jumping phase of an endboss attack. */
     startAttackJump() {
         if (!this.canAct()) return;
         this.currentState = 'jumping';
@@ -153,12 +191,14 @@ class Endboss extends MovableObject {
         this.jumpInterval = setInterval(() => this.moveAttackJump(), 1000 / 60);
     }
 
+    /** Moves the endboss during an attack jump. */
     moveAttackJump() {
         if (!this.canAct()) return;
         this.moveAttackTowardsCharacter();
         this.moveVertically();
     }
 
+    /** Moves the airborne attack toward the character. */
     moveAttackTowardsCharacter() {
         const distance = this.getAttackDistance();
         if (distance !== 0) this.updateAttackDirection(distance);
@@ -167,23 +207,33 @@ class Endboss extends MovableObject {
         this.x = Math.max(0, Math.min(this.x, this.getMaximumX()));
     }
 
+    /**
+     * Calculates center-to-center attack distance.
+     * @returns {number} Signed horizontal distance to the character.
+     */
     getAttackDistance() {
         const characterCenter = this.world.character.x + this.world.character.width / 2;
         const endbossCenter = this.x + this.width / 2;
         return characterCenter - endbossCenter;
     }
 
+    /**
+     * Updates airborne attack direction from a signed distance.
+     * @param {number} distance - Signed distance to the character.
+     */
     updateAttackDirection(distance) {
         this.otherDirection = distance > 0;
         this.attackDirection = this.otherDirection ? 1 : -1;
     }
 
+    /** Applies vertical attack movement and landing detection. */
     moveVertically() {
         this.y -= this.speedY;
         this.speedY -= 0.4;
         if (this.y >= this.groundY && this.speedY < 0) this.landAttack();
     }
 
+    /** Reverses an active jump after the endboss hits the character. */
     knockBackAfterHit() {
         if (this.currentState !== 'jumping') return;
         clearInterval(this.jumpInterval);
@@ -193,6 +243,7 @@ class Endboss extends MovableObject {
         this.jumpInterval = setInterval(() => this.moveAttackKnockback(), 1000 / 60);
     }
 
+    /** Moves the endboss during attack knockback. */
     moveAttackKnockback() {
         if (!this.canAct()) return;
         this.x += this.attackDirection * 4;
@@ -200,6 +251,7 @@ class Endboss extends MovableObject {
         this.moveVertically();
     }
 
+    /** Ends airborne movement and starts the landing animation. */
     landAttack() {
         clearInterval(this.jumpInterval);
         this.resetToGround();
@@ -210,6 +262,7 @@ class Endboss extends MovableObject {
         });
     }
 
+    /** Damages the endboss and handles hurt or death state. */
     hit() {
         if (this.isDead()) return;
         this.stateManager.save();
@@ -222,11 +275,13 @@ class Endboss extends MovableObject {
         }
     }
 
+    /** Plays the hit sound assigned to the current damage level. */
     playEndbossHitSound() {
         const hitNumber = (120 - this.energy) / 20;
         audioManager.playSound(`endbossHit${hitNumber}`);
     }
 
+    /** Resets combat state and starts the endboss death sequence. */
     prepareDeath() {
         this.stateManager.clear();
         this.resetToGround();
@@ -235,6 +290,7 @@ class Endboss extends MovableObject {
         this.winScreenTimeout = setTimeout(() => this.finishDeath(), 1000);
     }
 
+    /** Starts hurt animation before resuming the interrupted state. */
     startHurtAnimation() {
         this.currentState = 'hurt';
         this.animation.start(this.animation.IMAGES_HURT, {
@@ -243,32 +299,38 @@ class Endboss extends MovableObject {
         });
     }
 
+    /** Continues walking or attacks when the saved deadline elapsed. */
     resumeWalkingTimer() {
         if (!this.attackDeadline) this.startWalking();
         else if (Date.now() >= this.attackDeadline) this.startAttack();
         else this.startWalking(false);
     }
 
+    /** Starts the non-looping endboss death animation. */
     startDeathAnimation() {
         this.currentState = 'dead';
         this.animation.start(this.animation.IMAGES_DEAD, { duration: 250 });
     }
 
+    /** Shows the win screen after the death delay. */
     finishDeath() {
         if (this.world) this.world.showGameWonScreen();
     }
 
+    /** Resets vertical position and speed to ground values. */
     resetToGround() {
         this.y = this.groundY;
         this.speedY = 0;
     }
 
+    /** Stops endboss walking movement, animation and sound. */
     stopWalking() {
         this.animation.pauseWalkAnimation();
         clearInterval(this.movementInterval);
         clearTimeout(this.walkTimeout);
     }
 
+    /** Stops all timers associated with the current action. */
     stopActionTimers() {
         this.animation.stopFrameAnimation();
         this.stopWalking();
@@ -276,18 +338,31 @@ class Endboss extends MovableObject {
         clearTimeout(this.alertHoldTimeout);
     }
 
+    /**
+     * Calculates the remaining endboss energy percentage.
+     * @returns {number} Remaining endboss energy percentage.
+     */
     getEnergyPercentage() {
         return this.energy / 120 * 100;
     }
 
+    /**
+     * Checks whether the endboss may perform an action.
+     * @returns {boolean} Whether the endboss is active and alive.
+     */
     canAct() {
         return !this.isFrozen && !this.isDead();
     }
 
+    /**
+     * Checks whether spawn protection has ended.
+     * @returns {boolean} Whether the endboss can receive damage.
+     */
     canBeHit() {
         return this.alertFinished && !this.isDead();
     }
 
+    /** Freezes endboss movement, sounds and active timers. */
     freeze() {
         super.freeze();
         this.stopWalking();
