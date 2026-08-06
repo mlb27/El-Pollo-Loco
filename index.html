@@ -33,12 +33,66 @@
   <main class="game-container">
     <h1>El Pollo Loco</h1>
     <canvas id="canvas" width="720" height="480"></canvas>
+    <div id="startGameControls" class="start-game-controls" hidden>
+      <button class="game-action-button" type="button" onclick="startGame()">
+        <span class="game-action-icon door-icon"></span>
+        <span>Spiel starten</span>
+      </button>
+    </div>
+    <div id="endScreenControls" class="end-screen-controls" hidden>
+      <button class="game-action-button" type="button" onclick="restartGame()">
+        <span class="game-action-icon wheel-icon"></span>
+        <span id="restartGameLabel">Erneut versuchen</span>
+      </button>
+      <button class="game-action-button" type="button" onclick="showMainMenu()">
+        <span class="game-action-icon door-icon"></span>
+        <span>Hauptmenü</span>
+      </button>
+    </div>
+    <div class="quick-menu-controls">
+      <button class="quick-menu-button" type="button" onclick="openCredits()">Credits</button>
+      <button class="quick-menu-button" type="button" onclick="openControls()">Controls</button>
+    </div>
     <div class="audio-controls">
-      <button id="soundEffectsButton" class="menu-icon-button sound-effects-button is-enabled" type="button"
-        onclick="toggleSoundEffects()" aria-label="Soundeffekte ausschalten" aria-pressed="true"
-        title="Soundeffekte ausschalten"></button>
-      <button id="musicButton" class="menu-icon-button music-button is-enabled" type="button" onclick="toggleMusic()"
-        aria-label="Soundtrack ausschalten" aria-pressed="true" title="Soundtrack ausschalten"></button>
+      <div class="audio-menu-control">
+        <button id="audioMenuButton" class="menu-icon-button audio-menu-button" type="button" onclick="toggleAudioMenu()"
+          aria-label="Menü öffnen" aria-expanded="false" title="Menü öffnen"></button>
+        <div id="audioMenuDropdown" class="audio-menu-dropdown" hidden>
+          <button id="soundEffectsButton" class="menu-icon-button sound-effects-button is-enabled" type="button"
+            onclick="toggleSoundEffects()" aria-label="Soundeffekte ausschalten" aria-pressed="true"
+            title="Soundeffekte ausschalten"></button>
+          <button id="musicButton" class="menu-icon-button music-button is-enabled" type="button" onclick="toggleMusic()"
+            aria-label="Soundtrack ausschalten" aria-pressed="true" title="Soundtrack ausschalten"></button>
+        </div>
+      </div>
+    </div>
+    <div id="creditsOverlay" class="menu-overlay" hidden>
+      <section class="menu-panel" role="dialog" aria-modal="true" aria-label="Credits">
+        <button class="menu-close-button" type="button" onclick="closeCredits()" aria-label="Credits schließen"
+          title="Credits schließen"></button>
+        <div class="menu-content credits-content">
+          <h2>Credits</h2>
+          <p class="credits-assets">&quot;Wooden game ui design elements for videogame menu&quot;<br>
+            &quot;Wild west saloon decorative elements&quot;<br>
+            &quot;Wooden and gold buttons for ui game&quot;</p>
+          <p class="credits-author">by upklyak | Designed by Magnific</p>
+          <a href="https://www.magnific.com" target="_blank" rel="noopener noreferrer">www.magnific.com</a>
+        </div>
+      </section>
+    </div>
+    <div id="controlsOverlay" class="menu-overlay" hidden>
+      <section class="menu-panel" role="dialog" aria-modal="true" aria-label="Controls">
+        <button class="menu-close-button" type="button" onclick="closeControls()" aria-label="Controls schließen"
+          title="Controls schließen"></button>
+        <div class="menu-content controls-content">
+          <h2>Controls</h2>
+          <div class="controls-list">
+            <div class="control-row"><span class="control-key">← / →</span><span>Laufen</span></div>
+            <div class="control-row"><span class="control-key">Leertaste</span><span>Springen</span></div>
+            <div class="control-row"><span class="control-key">D</span><span>Flasche werfen</span></div>
+          </div>
+        </div>
+      </section>
     </div>
   </main>
 </body>

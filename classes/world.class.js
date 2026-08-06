@@ -76,6 +76,7 @@ class World {
     showGameOverScreen() {
         this.gameOverScreenVisible = true;
         audioManager.playSound('gameOver');
+        showEndScreenControls(false);
     }
 
     startGameWon() {
@@ -89,6 +90,7 @@ class World {
         if (!this.gameWon || this.gameWonScreenVisible) return;
         this.gameWonScreenVisible = true;
         audioManager.playSound('gameWon');
+        showEndScreenControls(true);
     }
 
     checkEndbossVisibility() {
@@ -260,7 +262,7 @@ class World {
         const imageWidth = 600;
         const imageHeight = 275;
         const imageX = (this.canvas.width - imageWidth) / 2;
-        const imageY = (this.canvas.height - imageHeight) / 2;
+        const imageY = 45;
         this.ctx.drawImage(image, imageX, imageY, imageWidth, imageHeight);
     }
 
