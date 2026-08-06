@@ -1,47 +1,4 @@
 class Endboss extends MovableObject {
-    IMAGES_WALKING = [
-        'img/4_enemy_boss_chicken/1_walk/G1.png',
-        'img/4_enemy_boss_chicken/1_walk/G2.png',
-        'img/4_enemy_boss_chicken/1_walk/G3.png',
-        'img/4_enemy_boss_chicken/1_walk/G4.png'
-    ];
-
-    IMAGES_ALERT = [
-        'img/4_enemy_boss_chicken/2_alert/G5.png',
-        'img/4_enemy_boss_chicken/2_alert/G6.png',
-        'img/4_enemy_boss_chicken/2_alert/G7.png',
-        'img/4_enemy_boss_chicken/2_alert/G8.png',
-        'img/4_enemy_boss_chicken/2_alert/G9.png',
-        'img/4_enemy_boss_chicken/2_alert/G10.png',
-        'img/4_enemy_boss_chicken/2_alert/G11.png'
-    ];
-
-    IMAGES_ATTACK = [
-        'img/4_enemy_boss_chicken/3_attack/G13.png',
-        'img/4_enemy_boss_chicken/3_attack/G14.png',
-        'img/4_enemy_boss_chicken/3_attack/G15.png',
-        'img/4_enemy_boss_chicken/3_attack/G16.png',
-        'img/4_enemy_boss_chicken/3_attack/G17.png',
-        'img/4_enemy_boss_chicken/3_attack/G18.png'
-    ];
-
-    IMAGES_LANDING = [
-        'img/4_enemy_boss_chicken/3_attack/G19.png',
-        'img/4_enemy_boss_chicken/3_attack/G20.png'
-    ];
-
-    IMAGES_HURT = [
-        'img/4_enemy_boss_chicken/4_hurt/G21.png',
-        'img/4_enemy_boss_chicken/4_hurt/G22.png',
-        'img/4_enemy_boss_chicken/4_hurt/G23.png'
-    ];
-
-    IMAGES_DEAD = [
-        'img/4_enemy_boss_chicken/5_dead/G24.png',
-        'img/4_enemy_boss_chicken/5_dead/G25.png',
-        'img/4_enemy_boss_chicken/5_dead/G26.png'
-    ];
-
     world;
     groundY = 55;
     maximumX = 3200;
@@ -56,34 +13,26 @@ class Endboss extends MovableObject {
     attackDeadline = 0;
     attackDirection = -1;
     combatStarted = false;
-    interruptedState;
-    displayedFrameIndex = 0;
-    animationFrameDeadline = 0;
 
     constructor() {
         super();
-        this.loadImage(this.IMAGES_ALERT[0]);
-        this.loadEndbossImages();
+        this.animation = new EndbossAnimation(this);
+        this.stateManager = new EndbossStateManager(this);
+        this.loadImage(this.animation.IMAGES_ALERT[0]);
         this.x = 3200;
         this.y = this.groundY;
         this.width = 250;
         this.height = 400;
     }
 
-    loadEndbossImages() {
-        this.loadImages(this.IMAGES_WALKING);
-        this.loadImages(this.IMAGES_ALERT);
-        this.loadImages(this.IMAGES_ATTACK);
-        this.loadImages(this.IMAGES_LANDING);
-        this.loadImages(this.IMAGES_HURT);
-        this.loadImages(this.IMAGES_DEAD);
-    }
-
     startAlert() {
         if (this.alertStarted || this.isDead()) return;
         this.alertStarted = true;
         this.currentState = 'alert';
-        this.startFrameAnimation(this.IMAGES_ALERT, 150, () => this.holdAlertFrame());
+        this.animation.start(this.animation.IMAGES_ALERT, {
+            duration: 150,
+            onComplete: () => this.holdAlertFrame()
+        });
         this.spawnSoundTimeout = setTimeout(() => {
             audioManager.playSound('endbossSpawn');
         }, 1000);
@@ -102,7 +51,7 @@ class Endboss extends MovableObject {
         this.currentState = 'walking';
         this.currentImage = 0;
         if (resetAttackTimer) this.attackDeadline = Date.now() + 900;
-        this.startWalkAnimation();
+        this.animation.startWalkAnimation();
         this.movementInterval = setInterval(() => this.moveTowardsCharacter(), 1000 / 60);
         this.scheduleAttack();
     }
@@ -116,7 +65,7 @@ class Endboss extends MovableObject {
         this.updateDirection();
         this.updateCombatState();
         if (this.maintainSafeDistance()) return;
-        this.startWalkAnimation();
+        this.animation.startWalkAnimation();
         if (this.otherDirection) this.moveRight();
         else this.moveLeft();
     }
@@ -139,12 +88,12 @@ class Endboss extends MovableObject {
         const distance = this.getDistanceToCharacter();
         if (distance > this.safeDistance) return false;
         if (distance < this.safeDistance) this.moveAwayFromCharacter(distance);
-        else this.pauseWalkAnimation();
+        else this.animation.pauseWalkAnimation();
         return true;
     }
 
     moveAwayFromCharacter(distance) {
-        this.startWalkAnimation();
+        this.animation.startWalkAnimation();
         const movement = Math.min(this.speed, this.safeDistance - distance);
         if (this.otherDirection) this.x -= movement;
         else this.x += movement;
@@ -165,32 +114,18 @@ class Endboss extends MovableObject {
         return Math.max(this.maximumX, safeX);
     }
 
-    startWalkAnimation() {
-        audioManager.playLoopingSound('endbossWalking');
-        if (this.walkAnimationInterval) return;
-        this.walkAnimationInterval = setInterval(() => {
-            this.playAnimation(this.IMAGES_WALKING);
-        }, 150);
-    }
-
-    pauseWalkAnimation() {
-        clearInterval(this.walkAnimationInterval);
-        this.walkAnimationInterval = null;
-        audioManager.stopLoopingSound('endbossWalking');
-    }
-
     startAttack() {
         if (!this.canAct()) return;
         this.updateDirection();
-        if (!this.canStartAttack()) {
-            this.delayAttack();
-            return;
-        }
+        if (!this.canStartAttack()) return this.delayAttack();
         this.stopActionTimers();
         this.currentState = 'attacking';
         this.attackDirection = this.otherDirection ? 1 : -1;
         audioManager.playSound('endbossPrepare');
-        this.startFrameAnimation(this.IMAGES_ATTACK, 200, () => this.startAttackJump());
+        this.animation.start(this.animation.IMAGES_ATTACK, {
+            duration: 200,
+            onComplete: () => this.startAttackJump()
+        });
     }
 
     canStartAttack() {
@@ -213,8 +148,7 @@ class Endboss extends MovableObject {
         if (!this.canAct()) return;
         this.currentState = 'jumping';
         audioManager.playSound('endbossJump');
-        const lastAttackImage = this.IMAGES_ATTACK[this.IMAGES_ATTACK.length - 1];
-        this.img = this.imageCache[lastAttackImage];
+        this.animation.showLastFrame(this.animation.IMAGES_ATTACK);
         this.speedY = 10.5;
         this.jumpInterval = setInterval(() => this.moveAttackJump(), 1000 / 60);
     }
@@ -222,22 +156,32 @@ class Endboss extends MovableObject {
     moveAttackJump() {
         if (!this.canAct()) return;
         this.moveAttackTowardsCharacter();
-        this.y -= this.speedY;
-        this.speedY -= 0.4;
-        if (this.y >= this.groundY && this.speedY < 0) this.landAttack();
+        this.moveVertically();
     }
 
     moveAttackTowardsCharacter() {
-        const characterCenter = this.world.character.x + this.world.character.width / 2;
-        const endbossCenter = this.x + this.width / 2;
-        const distance = characterCenter - endbossCenter;
-        if (distance !== 0) {
-            this.otherDirection = distance > 0;
-            this.attackDirection = this.otherDirection ? 1 : -1;
-        }
+        const distance = this.getAttackDistance();
+        if (distance !== 0) this.updateAttackDirection(distance);
         const movement = Math.min(11, Math.abs(distance));
         this.x += this.attackDirection * movement;
         this.x = Math.max(0, Math.min(this.x, this.getMaximumX()));
+    }
+
+    getAttackDistance() {
+        const characterCenter = this.world.character.x + this.world.character.width / 2;
+        const endbossCenter = this.x + this.width / 2;
+        return characterCenter - endbossCenter;
+    }
+
+    updateAttackDirection(distance) {
+        this.otherDirection = distance > 0;
+        this.attackDirection = this.otherDirection ? 1 : -1;
+    }
+
+    moveVertically() {
+        this.y -= this.speedY;
+        this.speedY -= 0.4;
+        if (this.y >= this.groundY && this.speedY < 0) this.landAttack();
     }
 
     knockBackAfterHit() {
@@ -253,22 +197,22 @@ class Endboss extends MovableObject {
         if (!this.canAct()) return;
         this.x += this.attackDirection * 4;
         this.x = Math.max(0, Math.min(this.x, this.getMaximumX()));
-        this.y -= this.speedY;
-        this.speedY -= 0.4;
-        if (this.y >= this.groundY && this.speedY < 0) this.landAttack();
+        this.moveVertically();
     }
 
     landAttack() {
         clearInterval(this.jumpInterval);
-        this.y = this.groundY;
-        this.speedY = 0;
+        this.resetToGround();
         this.currentState = 'landing';
-        this.startFrameAnimation(this.IMAGES_LANDING, 200, () => this.startWalking());
+        this.animation.start(this.animation.IMAGES_LANDING, {
+            duration: 200,
+            onComplete: () => this.startWalking()
+        });
     }
 
     hit() {
         if (this.isDead()) return;
-        this.saveInterruptedState();
+        this.stateManager.save();
         super.hit();
         this.stopActionTimers();
         if (this.isDead()) this.prepareDeath();
@@ -283,23 +227,8 @@ class Endboss extends MovableObject {
         audioManager.playSound(`endbossHit${hitNumber}`);
     }
 
-    saveInterruptedState() {
-        if (this.currentState === 'hurt' || this.currentState === 'dead') return;
-        this.interruptedState = this.createStateSnapshot();
-    }
-
-    createStateSnapshot() {
-        return {
-            state: this.currentState,
-            frameIndex: this.displayedFrameIndex,
-            frameTime: Math.max(0, this.animationFrameDeadline - Date.now()),
-            speedY: this.speedY,
-            attackDirection: this.attackDirection
-        };
-    }
-
     prepareDeath() {
-        this.interruptedState = null;
+        this.stateManager.clear();
         this.resetToGround();
         audioManager.playSound('endbossDied');
         this.startDeathAnimation();
@@ -308,24 +237,10 @@ class Endboss extends MovableObject {
 
     startHurtAnimation() {
         this.currentState = 'hurt';
-        this.startFrameAnimation(this.IMAGES_HURT, 150, () => this.resumeInterruptedState());
-    }
-
-    resumeInterruptedState() {
-        if (!this.canAct()) return;
-        const stateSnapshot = this.interruptedState;
-        this.interruptedState = null;
-        if (stateSnapshot) this.resumeSavedState(stateSnapshot);
-        else this.resumeWalkingTimer();
-    }
-
-    resumeSavedState(stateSnapshot) {
-        if (stateSnapshot.state === 'attacking') this.resumeAttack(stateSnapshot);
-        else if (stateSnapshot.state === 'jumping') this.resumeJump(stateSnapshot);
-        else if (stateSnapshot.state === 'knockedBack') this.resumeAttackKnockback(stateSnapshot);
-        else if (stateSnapshot.state === 'landing') this.resumeLanding(stateSnapshot);
-        else if (stateSnapshot.state === 'alert') this.resumeAlert(stateSnapshot);
-        else this.resumeWalkingTimer();
+        this.animation.start(this.animation.IMAGES_HURT, {
+            duration: 150,
+            onComplete: () => this.stateManager.resume()
+        });
     }
 
     resumeWalkingTimer() {
@@ -334,52 +249,9 @@ class Endboss extends MovableObject {
         else this.startWalking(false);
     }
 
-    resumeAttack(stateSnapshot) {
-        this.currentState = 'attacking';
-        this.attackDirection = stateSnapshot.attackDirection;
-        this.startFrameAnimation(
-            this.IMAGES_ATTACK, 200, () => this.startAttackJump(),
-            stateSnapshot.frameIndex, stateSnapshot.frameTime
-        );
-    }
-
-    resumeJump(stateSnapshot) {
-        this.currentState = 'jumping';
-        this.speedY = stateSnapshot.speedY;
-        this.attackDirection = stateSnapshot.attackDirection;
-        const lastImage = this.IMAGES_ATTACK[this.IMAGES_ATTACK.length - 1];
-        this.img = this.imageCache[lastImage];
-        this.jumpInterval = setInterval(() => this.moveAttackJump(), 1000 / 60);
-    }
-
-    resumeAttackKnockback(stateSnapshot) {
-        this.currentState = 'knockedBack';
-        this.speedY = stateSnapshot.speedY;
-        this.attackDirection = stateSnapshot.attackDirection;
-        const lastImage = this.IMAGES_ATTACK[this.IMAGES_ATTACK.length - 1];
-        this.img = this.imageCache[lastImage];
-        this.jumpInterval = setInterval(() => this.moveAttackKnockback(), 1000 / 60);
-    }
-
-    resumeLanding(stateSnapshot) {
-        this.currentState = 'landing';
-        this.startFrameAnimation(
-            this.IMAGES_LANDING, 200, () => this.startWalking(),
-            stateSnapshot.frameIndex, stateSnapshot.frameTime
-        );
-    }
-
-    resumeAlert(stateSnapshot) {
-        this.currentState = 'alert';
-        this.startFrameAnimation(
-            this.IMAGES_ALERT, 150, () => this.holdAlertFrame(),
-            stateSnapshot.frameIndex, stateSnapshot.frameTime
-        );
-    }
-
     startDeathAnimation() {
         this.currentState = 'dead';
-        this.startFrameAnimation(this.IMAGES_DEAD, 250, null);
+        this.animation.start(this.animation.IMAGES_DEAD, { duration: 250 });
     }
 
     finishDeath() {
@@ -391,50 +263,14 @@ class Endboss extends MovableObject {
         this.speedY = 0;
     }
 
-    startFrameAnimation(images, frameDuration, onComplete, startIndex = 0, firstDelay = frameDuration) {
-        this.stopFrameAnimation();
-        this.animationImages = images;
-        this.animationFrameDuration = frameDuration;
-        this.animationCallback = onComplete;
-        this.currentImage = startIndex;
-        this.showAnimationFrame(firstDelay);
-    }
-
-    showAnimationFrame(frameDelay) {
-        this.displayedFrameIndex = this.currentImage;
-        const path = this.animationImages[this.currentImage];
-        this.img = this.imageCache[path];
-        this.animationFrameDeadline = Date.now() + frameDelay;
-        this.animationTimer = setTimeout(() => this.advanceAnimationFrame(), frameDelay);
-    }
-
-    advanceAnimationFrame() {
-        const lastImageIndex = this.animationImages.length - 1;
-        if (this.displayedFrameIndex < lastImageIndex) {
-            this.currentImage = this.displayedFrameIndex + 1;
-            this.showAnimationFrame(this.animationFrameDuration);
-        } else this.runAnimationCallback();
-    }
-
-    runAnimationCallback() {
-        const callback = this.animationCallback;
-        this.animationCallback = null;
-        if (callback) callback();
-    }
-
-    stopFrameAnimation() {
-        clearTimeout(this.animationTimer);
-        this.animationCallback = null;
-    }
-
     stopWalking() {
-        this.pauseWalkAnimation();
+        this.animation.pauseWalkAnimation();
         clearInterval(this.movementInterval);
         clearTimeout(this.walkTimeout);
     }
 
     stopActionTimers() {
-        this.stopFrameAnimation();
+        this.animation.stopFrameAnimation();
         this.stopWalking();
         clearInterval(this.jumpInterval);
         clearTimeout(this.alertHoldTimeout);
@@ -458,6 +294,6 @@ class Endboss extends MovableObject {
         clearInterval(this.jumpInterval);
         clearTimeout(this.alertHoldTimeout);
         clearTimeout(this.spawnSoundTimeout);
-        if (this.currentState !== 'dead') this.stopFrameAnimation();
+        if (this.currentState !== 'dead') this.animation.stopFrameAnimation();
     }
 }
