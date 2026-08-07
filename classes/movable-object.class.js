@@ -4,6 +4,7 @@ class MovableObject extends DrawableObject {
     acceleration = 0.5;
     otherDirection = false;
     isFrozen = false;
+    world;
 
     energy = 100;
     lastHit = 0;
@@ -11,7 +12,7 @@ class MovableObject extends DrawableObject {
     /** Applies gravity to the movable object. */
     applyGravity() {
         setInterval(() => {
-            if (!this.isFrozen && (this.isAboveGround() || this.speedY > 0)) {
+            if (!this.isFrozen && !this.isPaused() && (this.isAboveGround() || this.speedY > 0)) {
                 this.y -= this.speedY;
                 this.speedY -= this.acceleration;
             }
@@ -83,12 +84,12 @@ class MovableObject extends DrawableObject {
 
     /** Moves the object to the right. */
     moveRight() {
-        if (!this.isFrozen) this.x += this.speed;
+        if (!this.isFrozen && !this.isPaused()) this.x += this.speed;
     }
 
     /** Moves the object to the left. */
     moveLeft() {
-        if (!this.isFrozen) this.x -= this.speed;
+        if (!this.isFrozen && !this.isPaused()) this.x -= this.speed;
     };
 
     /**
@@ -96,7 +97,7 @@ class MovableObject extends DrawableObject {
      * @param {string[]} images - Animation image paths.
      */
     playAnimation(images) {
-        if (this.isFrozen) return;
+        if (this.isFrozen || this.isPaused()) return;
         let i = this.currentImage % images.length;
         let path = images[i];
         this.img = this.imageCache[path];
@@ -105,7 +106,15 @@ class MovableObject extends DrawableObject {
 
     /** Starts an upward jump movement. */
     jump() {
-        if (!this.isFrozen) this.speedY = 11;
+        if (!this.isFrozen && !this.isPaused()) this.speedY = 11;
+    }
+
+    /**
+     * Checks whether the owning game world is paused.
+     * @returns {boolean} Whether gameplay is paused.
+     */
+    isPaused() {
+        return Boolean(this.world?.paused);
     }
 
     /** Freezes movement and vertical speed. */

@@ -1,11 +1,11 @@
 class HealthBar extends DrawableObject {
     IMAGES_HEALTH_BAR = [
-        'img/7_statusbars/1_statusbar/2_statusbar_health/blue/0.png',
-        'img/7_statusbars/1_statusbar/2_statusbar_health/blue/20.png',
-        'img/7_statusbars/1_statusbar/2_statusbar_health/blue/40.png',
-        'img/7_statusbars/1_statusbar/2_statusbar_health/blue/60.png',
-        'img/7_statusbars/1_statusbar/2_statusbar_health/blue/80.png',
-        'img/7_statusbars/1_statusbar/2_statusbar_health/blue/100.png',
+        'img/game/7_statusbars/1_statusbar/2_statusbar_health/blue/0.png',
+        'img/game/7_statusbars/1_statusbar/2_statusbar_health/blue/20.png',
+        'img/game/7_statusbars/1_statusbar/2_statusbar_health/blue/40.png',
+        'img/game/7_statusbars/1_statusbar/2_statusbar_health/blue/60.png',
+        'img/game/7_statusbars/1_statusbar/2_statusbar_health/blue/80.png',
+        'img/game/7_statusbars/1_statusbar/2_statusbar_health/blue/100.png',
     ]
 
     percentage = 100;

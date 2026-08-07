@@ -20,6 +20,7 @@ class World {
     gameWonScreenVisible = false;
     gameWonImage = new Image();
     stopped = false;
+    paused = false;
     animationFrame;
     gameOverTimeout;
 
@@ -33,6 +34,7 @@ class World {
         this.canvas = canvas;
         this.keyboard = keyboard;
         this.itemHandler = new WorldItemHandler(this);
+        this.pauseManager = new GamePauseManager(this);
         this.loadGameOverImage();
         this.loadGameWonImage();
         this.draw();
@@ -43,18 +45,17 @@ class World {
     /** Connects the character and endboss with this world. */
     setWorld() {
         this.character.world = this;
-        const endboss = this.level.enemies.find((enemy) => enemy instanceof Endboss);
-        if (endboss) endboss.world = this;
+        this.level.enemies.forEach((enemy) => enemy.world = this);
     }
 
     /** Loads the game-over screen image. */
     loadGameOverImage() {
-        this.gameOverImage.src = 'img/10_win_loss/You lost.png';
+        this.gameOverImage = assetLoader.getImage('img/game/10_win_loss/You lost.png');
     }
 
     /** Loads the game-won screen image. */
     loadGameWonImage() {
-        this.gameWonImage.src = 'img/10_win_loss/You won A.png';
+        this.gameWonImage = assetLoader.getImage('img/game/10_win_loss/You won A.png');
     }
 
     /** Starts collision checks and bottle throwing intervals. */
@@ -65,6 +66,7 @@ class World {
 
     /** Runs all collision and pickup checks for one game tick. */
     runCollisionChecks() {
+        if (this.paused) return;
         this.level.enemies.forEach((enemy) => this.checkEnemyCollision(enemy));
         this.itemHandler.checkBottlePickups();
         this.itemHandler.checkCoinPickups();
@@ -79,7 +81,9 @@ class World {
         this.gameOver = true;
         audioManager.pauseBackgroundMusic();
         this.freezeGame();
-        this.gameOverTimeout = setTimeout(() => this.showGameOverScreen(), 1000);
+        this.gameOverTimeout = setTimeout(() => {
+            this.runWhenActive(() => this.showGameOverScreen());
+        }, 1000);
     }
 
     /** Stops game intervals and freezes all moving objects. */
@@ -185,15 +189,17 @@ class World {
      */
     killChicken(chicken) {
         chicken.die();
-        setTimeout(() => this.removeEnemy(chicken), 3000);
+        setTimeout(() => this.runWhenActive(() => this.removeEnemy(chicken)), 3000);
     }
 
     /** Throws a bottle when input, inventory and cooldown allow it. */
     checkThrowObjects() {
+        if (this.paused) return;
         if (this.keyboard.D && this.canThrowBottle()) {
             let bottle = new ThrowableObject(
                 this.getBottleStartX(), this.character.y + 100, this.character.otherDirection
             );
+            bottle.world = this;
             this.throwableObjects.push(bottle);
             this.character.useBottle();
             this.itemHandler.updateBottleBar();
@@ -269,6 +275,30 @@ class World {
     /** Requests another animation frame while the world is active. */
     requestNextFrame() {
         if (!this.stopped) this.animationFrame = requestAnimationFrame(() => this.draw());
+    }
+
+    /**
+     * Pauses gameplay without discarding the current world state.
+     * @param {string} [reason='manual'] - Source requesting the pause.
+     */
+    pauseGame(reason = 'manual') {
+        this.pauseManager.pause(reason);
+    }
+
+    /**
+     * Releases one pause source and resumes when possible.
+     * @param {string} [reason='manual'] - Source releasing the pause.
+     */
+    resumeGame(reason = 'manual') {
+        this.pauseManager.resume(reason);
+    }
+
+    /**
+     * Runs a delayed action when gameplay is active again.
+     * @param {Function} callback - Delayed gameplay action.
+     */
+    runWhenActive(callback) {
+        this.pauseManager.runWhenActive(callback);
     }
 
     /** Stops rendering, timers and all active game objects. */

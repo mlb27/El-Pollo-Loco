@@ -3,19 +3,26 @@ let world;
 let keyboard = new Keyboard();
 
 /** Initializes canvas, audio controls and the start screen. */
-function init() {
+async function init() {
     canvas = document.getElementById("canvas")
+    await loadingScreen.start(canvas);
     updateAudioButtons();
+    initializeMobileControls();
+    initializeOrientationPause();
+    updateMobileGameScale();
+    await assetLoader.preloadImages();
+    loadingScreen.stop();
     audioManager.startBackgroundMusic();
     document.addEventListener('click', closeAudioMenuOnOutsideClick);
+    window.addEventListener('resize', updateMobileGameScale);
     showStartScreen();
 }
 
+
 /** Loads and displays the game start screen. */
 function showStartScreen() {
-    const startScreen = new Image();
-    startScreen.onload = () => drawStartScreen(startScreen);
-    startScreen.src = 'img/9_intro_outro_screens/start/startscreen_1.png';
+    const path = 'img/game/9_intro_outro_screens/start/startscreen_1.png';
+    drawStartScreen(assetLoader.getImage(path));
 }
 
 /**
@@ -33,10 +40,12 @@ function startGame() {
     if (world) return;
     hideGameControls();
     resetKeyboard();
+    showMobileControls();
     initLevel();
     audioManager.stopSoundEffects();
     audioManager.startBackgroundMusic();
     world = new World(canvas, keyboard);
+    pauseButton.show(world);
 }
 
 /**
@@ -45,6 +54,8 @@ function startGame() {
  */
 function showEndScreenControls(gameWon) {
     const restartLabel = gameWon ? 'Nochmal spielen' : 'Erneut versuchen';
+    hideMobileControls();
+    pauseButton.hide();
     document.getElementById('restartGameLabel').textContent = restartLabel;
     document.getElementById('endScreenControls').hidden = false;
 }
@@ -72,11 +83,96 @@ function stopCurrentGame() {
 function hideGameControls() {
     document.getElementById('startGameControls').hidden = true;
     document.getElementById('endScreenControls').hidden = true;
+    hideMobileControls();
+    pauseButton.hide();
 }
 
 /** Replaces the keyboard state with a fresh instance. */
 function resetKeyboard() {
     keyboard = new Keyboard();
+}
+/** Connects every mobile button to the existing keyboard state. */
+function initializeMobileControls() {
+    document.querySelectorAll('.mobile-control-button').forEach(addMobileControlListeners);
+}
+
+/**
+ * Adds pointer listeners to one mobile control.
+ * @param {HTMLButtonElement} button - Mobile control button.
+ */
+function addMobileControlListeners(button) {
+    button.addEventListener('pointerdown', (event) => updateMobileControl(event, true));
+    button.addEventListener('pointerup', (event) => updateMobileControl(event, false));
+    button.addEventListener('pointercancel', (event) => updateMobileControl(event, false));
+    button.addEventListener('pointerleave', (event) => updateMobileControl(event, false));
+    button.addEventListener('contextmenu', preventMobileContextMenu);
+}
+
+/**
+ * Updates a mobile control and prevents browser touch gestures.
+ * @param {PointerEvent} event - Pointer event from a control button.
+ * @param {boolean} isPressed - Whether the control is pressed.
+ */
+function updateMobileControl(event, isPressed) {
+    event.preventDefault();
+    keyboard[event.currentTarget.dataset.key] = isPressed;
+    if (isPressed) event.currentTarget.setPointerCapture(event.pointerId);
+}
+
+/**
+ * Prevents the long-press context menu on mobile controls.
+ * @param {Event} event - Context-menu event from a mobile control.
+ */
+function preventMobileContextMenu(event) {
+    event.preventDefault();
+}
+
+/** Shows touch controls while a game is running. */
+function showMobileControls() {
+    document.getElementById('mobileControls').hidden = false;
+}
+
+/** Hides touch controls outside an active game. */
+function hideMobileControls() {
+    document.getElementById('mobileControls').hidden = true;
+}
+
+/** Scales the complete game design to a mobile landscape viewport. */
+function updateMobileGameScale() {
+    const gameContainer = document.getElementById('gameContainer');
+    const isMobileLandscape = innerWidth <= 1024 && innerWidth > innerHeight;
+    const scale = isMobileLandscape ? calculateMobileScale() : 1;
+    gameContainer.style.setProperty('--game-scale', scale);
+}
+
+/**
+ * Calculates a scale that includes the canvas frame and upper menus.
+ * @returns {number} Mobile game scale.
+ */
+function calculateMobileScale() {
+    return Math.min(innerWidth / 860, innerHeight / 660, 1);
+}
+
+/** Registers game pause handling for mobile portrait orientation. */
+function initializeOrientationPause() {
+    const portraitQuery = matchMedia('(max-width: 1024px) and (orientation: portrait)');
+    portraitQuery.addEventListener('change', handleOrientationChange);
+}
+
+/**
+ * Pauses or resumes the active world after an orientation change.
+ * @param {MediaQueryListEvent} event - Changed portrait-media-query state.
+ */
+function handleOrientationChange(event) {
+    if (!world) return;
+    if (event.matches) world.pauseGame('orientation');
+    else world.resumeGame('orientation');
+    pauseButton.update(world);
+}
+
+/** Toggles the manual game pause from its menu button. */
+function toggleGamePause() {
+    if (world) pauseButton.toggle(world);
 }
 
 /** Toggles sound effects and updates their menu button. */

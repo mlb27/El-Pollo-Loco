@@ -1,6 +1,8 @@
 class AudioManager {
     soundEffectsEnabled = true;
     musicEnabled = true;
+    gamePaused = false;
+    pausedGameSounds = [];
     sounds = {
         backgroundMusic: new Audio('audio/soundtrack.mp3'),
         characterJump1: new Audio('audio/character-jump1.mp3'),
@@ -157,13 +159,37 @@ class AudioManager {
             .forEach(([, sound]) => this.stopAudio(sound));
     }
 
+    /** Pauses all currently playing game audio. */
+    pauseGameAudio() {
+        this.gamePaused = true;
+        this.pausedGameSounds = Object.values(this.sounds).filter((sound) => !sound.paused);
+        this.pausedGameSounds.forEach((sound) => sound.pause());
+    }
+
+    /** Resumes audio that was active before the game pause. */
+    resumeGameAudio() {
+        this.gamePaused = false;
+        const pausedSounds = this.pausedGameSounds;
+        this.pausedGameSounds = [];
+        pausedSounds.forEach((sound) => this.resumeGameSound(sound));
+    }
+
+    /**
+     * Resumes one previously active and still enabled sound.
+     * @param {HTMLAudioElement} sound - Paused audio element.
+     */
+    resumeGameSound(sound) {
+        const isMusic = sound === this.sounds.backgroundMusic;
+        if (isMusic || this.soundEffectsEnabled) sound.play().catch(() => {});
+    }
+
     /**
      * Plays a sound effect from its beginning.
      * @param {string} soundName - Registered sound-effect name.
      */
     playSound(soundName) {
         const sound = this.sounds[soundName];
-        if (!sound || !this.soundEffectsEnabled) return;
+        if (!sound || !this.soundEffectsEnabled || this.gamePaused) return;
         sound.currentTime = 0;
         sound.play();
     }
@@ -174,7 +200,7 @@ class AudioManager {
      */
     playLoopingSound(soundName) {
         const sound = this.sounds[soundName];
-        if (!sound || !this.soundEffectsEnabled || !sound.paused) return;
+        if (!sound || !this.soundEffectsEnabled || this.gamePaused || !sound.paused) return;
         sound.loop = true;
         sound.play();
     }

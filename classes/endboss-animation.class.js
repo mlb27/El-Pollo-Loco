@@ -1,45 +1,45 @@
 class EndbossAnimation {
     IMAGES_WALKING = [
-        'img/4_enemy_boss_chicken/1_walk/G1.png',
-        'img/4_enemy_boss_chicken/1_walk/G2.png',
-        'img/4_enemy_boss_chicken/1_walk/G3.png',
-        'img/4_enemy_boss_chicken/1_walk/G4.png'
+        'img/game/4_enemy_boss_chicken/1_walk/G1.png',
+        'img/game/4_enemy_boss_chicken/1_walk/G2.png',
+        'img/game/4_enemy_boss_chicken/1_walk/G3.png',
+        'img/game/4_enemy_boss_chicken/1_walk/G4.png'
     ];
 
     IMAGES_ALERT = [
-        'img/4_enemy_boss_chicken/2_alert/G5.png',
-        'img/4_enemy_boss_chicken/2_alert/G6.png',
-        'img/4_enemy_boss_chicken/2_alert/G7.png',
-        'img/4_enemy_boss_chicken/2_alert/G8.png',
-        'img/4_enemy_boss_chicken/2_alert/G9.png',
-        'img/4_enemy_boss_chicken/2_alert/G10.png',
-        'img/4_enemy_boss_chicken/2_alert/G11.png'
+        'img/game/4_enemy_boss_chicken/2_alert/G5.png',
+        'img/game/4_enemy_boss_chicken/2_alert/G6.png',
+        'img/game/4_enemy_boss_chicken/2_alert/G7.png',
+        'img/game/4_enemy_boss_chicken/2_alert/G8.png',
+        'img/game/4_enemy_boss_chicken/2_alert/G9.png',
+        'img/game/4_enemy_boss_chicken/2_alert/G10.png',
+        'img/game/4_enemy_boss_chicken/2_alert/G11.png'
     ];
 
     IMAGES_ATTACK = [
-        'img/4_enemy_boss_chicken/3_attack/G13.png',
-        'img/4_enemy_boss_chicken/3_attack/G14.png',
-        'img/4_enemy_boss_chicken/3_attack/G15.png',
-        'img/4_enemy_boss_chicken/3_attack/G16.png',
-        'img/4_enemy_boss_chicken/3_attack/G17.png',
-        'img/4_enemy_boss_chicken/3_attack/G18.png'
+        'img/game/4_enemy_boss_chicken/3_attack/G13.png',
+        'img/game/4_enemy_boss_chicken/3_attack/G14.png',
+        'img/game/4_enemy_boss_chicken/3_attack/G15.png',
+        'img/game/4_enemy_boss_chicken/3_attack/G16.png',
+        'img/game/4_enemy_boss_chicken/3_attack/G17.png',
+        'img/game/4_enemy_boss_chicken/3_attack/G18.png'
     ];
 
     IMAGES_LANDING = [
-        'img/4_enemy_boss_chicken/3_attack/G19.png',
-        'img/4_enemy_boss_chicken/3_attack/G20.png'
+        'img/game/4_enemy_boss_chicken/3_attack/G19.png',
+        'img/game/4_enemy_boss_chicken/3_attack/G20.png'
     ];
 
     IMAGES_HURT = [
-        'img/4_enemy_boss_chicken/4_hurt/G21.png',
-        'img/4_enemy_boss_chicken/4_hurt/G22.png',
-        'img/4_enemy_boss_chicken/4_hurt/G23.png'
+        'img/game/4_enemy_boss_chicken/4_hurt/G21.png',
+        'img/game/4_enemy_boss_chicken/4_hurt/G22.png',
+        'img/game/4_enemy_boss_chicken/4_hurt/G23.png'
     ];
 
     IMAGES_DEAD = [
-        'img/4_enemy_boss_chicken/5_dead/G24.png',
-        'img/4_enemy_boss_chicken/5_dead/G25.png',
-        'img/4_enemy_boss_chicken/5_dead/G26.png'
+        'img/game/4_enemy_boss_chicken/5_dead/G24.png',
+        'img/game/4_enemy_boss_chicken/5_dead/G25.png',
+        'img/game/4_enemy_boss_chicken/5_dead/G26.png'
     ];
 
     /**
@@ -97,11 +97,22 @@ class EndbossAnimation {
 
     /** Advances the animation or runs its completion callback. */
     advanceFrame() {
+        if (this.endboss.isPaused()) return this.delayFrame(100);
+        const remainingTime = this.frameDeadline - Date.now();
+        if (remainingTime > 0) return this.delayFrame(remainingTime);
         const lastImageIndex = this.animationImages.length - 1;
         if (this.displayedFrameIndex < lastImageIndex) {
             this.currentImage = this.displayedFrameIndex + 1;
             this.showFrame(this.frameDuration);
         } else this.runCallback();
+    }
+
+    /**
+     * Delays the next animation-frame check.
+     * @param {number} delay - Delay in milliseconds.
+     */
+    delayFrame(delay) {
+        this.frameTimer = setTimeout(() => this.advanceFrame(), delay);
     }
 
     /** Runs and clears the current animation callback. */

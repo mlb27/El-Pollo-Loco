@@ -36,15 +36,17 @@ class Endboss extends MovableObject {
             onComplete: () => this.holdAlertFrame()
         });
         this.spawnSoundTimeout = setTimeout(() => {
-            audioManager.playSound('endbossSpawn');
+            this.world.runWhenActive(() => audioManager.playSound('endbossSpawn'));
         }, 1000);
     }
 
     /** Holds the final alert frame before walking starts. */
     holdAlertFrame() {
         this.alertHoldTimeout = setTimeout(() => {
-            this.alertFinished = true;
-            this.startWalking();
+            this.world.runWhenActive(() => {
+                this.alertFinished = true;
+                this.startWalking();
+            });
         }, 500);
     }
 
@@ -71,6 +73,7 @@ class Endboss extends MovableObject {
 
     /** Moves toward the character while respecting safe distance. */
     moveTowardsCharacter() {
+        if (!this.canAct()) return;
         this.updateDirection();
         this.updateCombatState();
         if (this.maintainSafeDistance()) return;
@@ -146,7 +149,9 @@ class Endboss extends MovableObject {
 
     /** Starts or briefly delays the next endboss attack. */
     startAttack() {
+        if (this.isPaused()) return this.retryAttackAfterPause();
         if (!this.canAct()) return;
+        if (Date.now() < this.attackDeadline) return this.scheduleAttack();
         this.updateDirection();
         if (!this.canStartAttack()) return this.delayAttack();
         this.stopActionTimers();
@@ -157,6 +162,11 @@ class Endboss extends MovableObject {
             duration: 200,
             onComplete: () => this.startAttackJump()
         });
+    }
+
+    /** Retries an elapsed attack timer after gameplay resumes. */
+    retryAttackAfterPause() {
+        this.walkTimeout = setTimeout(() => this.startAttack(), 100);
     }
 
     /**
@@ -287,7 +297,9 @@ class Endboss extends MovableObject {
         this.resetToGround();
         audioManager.playSound('endbossDied');
         this.startDeathAnimation();
-        this.winScreenTimeout = setTimeout(() => this.finishDeath(), 1000);
+        this.winScreenTimeout = setTimeout(() => {
+            this.world.runWhenActive(() => this.finishDeath());
+        }, 1000);
     }
 
     /** Starts hurt animation before resuming the interrupted state. */
@@ -351,7 +363,7 @@ class Endboss extends MovableObject {
      * @returns {boolean} Whether the endboss is active and alive.
      */
     canAct() {
-        return !this.isFrozen && !this.isDead();
+        return !this.isFrozen && !this.isPaused() && !this.isDead();
     }
 
     /**

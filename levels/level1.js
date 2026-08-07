@@ -40,10 +40,10 @@ function createBackgroundObjects() {
  */
 function createBackgroundLayer(x, imageNumber) {
     return [
-        new BackgroundObject('img/5_background/layers/air.png', x),
-        new BackgroundObject(`img/5_background/layers/3_third_layer/${imageNumber}.png`, x),
-        new BackgroundObject(`img/5_background/layers/2_second_layer/${imageNumber}.png`, x),
-        new BackgroundObject(`img/5_background/layers/1_first_layer/${imageNumber}.png`, x)
+        new BackgroundObject('img/game/5_background/layers/air.png', x),
+        new BackgroundObject(`img/game/5_background/layers/3_third_layer/${imageNumber}.png`, x),
+        new BackgroundObject(`img/game/5_background/layers/2_second_layer/${imageNumber}.png`, x),
+        new BackgroundObject(`img/game/5_background/layers/1_first_layer/${imageNumber}.png`, x)
     ];
 }
 /**

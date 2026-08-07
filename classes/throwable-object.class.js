@@ -1,23 +1,23 @@
 class ThrowableObject extends MovableObject {
     IMAGES_ROTATION = [
-        'img/6_salsa_bottle/bottle_rotation/1_bottle_rotation.png',
-        'img/6_salsa_bottle/bottle_rotation/2_bottle_rotation.png',
-        'img/6_salsa_bottle/bottle_rotation/3_bottle_rotation.png',
-        'img/6_salsa_bottle/bottle_rotation/4_bottle_rotation.png'
+        'img/game/6_salsa_bottle/bottle_rotation/1_bottle_rotation.png',
+        'img/game/6_salsa_bottle/bottle_rotation/2_bottle_rotation.png',
+        'img/game/6_salsa_bottle/bottle_rotation/3_bottle_rotation.png',
+        'img/game/6_salsa_bottle/bottle_rotation/4_bottle_rotation.png'
     ];
 
     IMAGES_SPLASH = [
-        'img/6_salsa_bottle/bottle_rotation/bottle_splash/1_bottle_splash.png',
-        'img/6_salsa_bottle/bottle_rotation/bottle_splash/2_bottle_splash.png',
-        'img/6_salsa_bottle/bottle_rotation/bottle_splash/3_bottle_splash.png',
-        'img/6_salsa_bottle/bottle_rotation/bottle_splash/4_bottle_splash.png',
-        'img/6_salsa_bottle/bottle_rotation/bottle_splash/5_bottle_splash.png',
-        'img/6_salsa_bottle/bottle_rotation/bottle_splash/6_bottle_splash.png'
+        'img/game/6_salsa_bottle/bottle_rotation/bottle_splash/1_bottle_splash.png',
+        'img/game/6_salsa_bottle/bottle_rotation/bottle_splash/2_bottle_splash.png',
+        'img/game/6_salsa_bottle/bottle_rotation/bottle_splash/3_bottle_splash.png',
+        'img/game/6_salsa_bottle/bottle_rotation/bottle_splash/4_bottle_splash.png',
+        'img/game/6_salsa_bottle/bottle_rotation/bottle_splash/5_bottle_splash.png',
+        'img/game/6_salsa_bottle/bottle_rotation/bottle_splash/6_bottle_splash.png'
     ];
 
     IMAGES_GROUND = [
-        'img/6_salsa_bottle/1_salsa_bottle_on_ground.png',
-        'img/6_salsa_bottle/2_salsa_bottle_on_ground.png'
+        'img/game/6_salsa_bottle/1_salsa_bottle_on_ground.png',
+        'img/game/6_salsa_bottle/2_salsa_bottle_on_ground.png'
     ];
 
     speedX = 15;
@@ -35,7 +35,7 @@ class ThrowableObject extends MovableObject {
      * @param {boolean} [otherDirection=false] - Whether the bottle flies left.
      */
     constructor(x, y, otherDirection = false) {
-        super().loadImage('img/6_salsa_bottle/bottle_rotation/1_bottle_rotation.png');
+        super().loadImage('img/game/6_salsa_bottle/bottle_rotation/1_bottle_rotation.png');
         this.setBottleProperties(x, y, otherDirection);
         this.loadBottleImages();
         this.throw();
@@ -85,6 +85,7 @@ class ThrowableObject extends MovableObject {
 
     /** Moves the bottle horizontally and checks the ground. */
     moveBottle() {
+        if (this.isPaused()) return;
         this.x += this.speedX;
         this.checkGroundCollision();
     }
@@ -128,7 +129,7 @@ class ThrowableObject extends MovableObject {
      */
     expireAfter(milliseconds) {
         setTimeout(() => {
-            this.isExpired = true;
+            this.world.runWhenActive(() => this.isExpired = true);
         }, milliseconds);
     }
 
@@ -179,13 +180,14 @@ class ThrowableObject extends MovableObject {
 
     /** Displays the next splash frame or expires the bottle. */
     playSplashFrame() {
+        if (this.isPaused()) return;
         if (this.currentImage < this.IMAGES_SPLASH.length) {
             const path = this.IMAGES_SPLASH[this.currentImage];
             this.img = this.imageCache[path];
             this.currentImage++;
         } else {
             clearInterval(this.animationInterval);
-            this.isExpired = true;
+            this.world.runWhenActive(() => this.isExpired = true);
         }
     }
 

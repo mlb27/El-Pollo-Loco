@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="style.css" />
   <title>El Pollo Loco</title>
 
+  <script src="./classes/asset-loader.class.js"></script>
+  <script src="./classes/loading-screen.class.js"></script>
   <script src="./classes/audio-manager.class.js"></script>
   <script src="./classes/drawable-object.class.js"></script>
   <script src="./classes/movable-object.class.js"></script>
@@ -22,6 +24,8 @@
   <script src="./classes/bottle.class.js"></script>
   <script src="./classes/coin.class.js"></script>
   <script src="./classes/world-item-handler.class.js"></script>
+  <script src="./classes/game-pause-manager.class.js"></script>
+  <script src="./classes/pause-button.class.js"></script>
   <script src="./classes/world.class.js"></script>
   <script src="./classes/keyboard.class.js"></script>
   <script src="./classes/background-object.class.js"></script>
@@ -36,9 +40,23 @@
 </head>
 
 <body onload="init()">
+  <div class="rotate-phone-overlay">
+    <img src="img/ui/rotate-phone.png" alt="Bitte drehe dein Gerät ins Querformat">
+  </div>
   <main id="gameContainer" class="game-container">
     <h1>El Pollo Loco</h1>
     <canvas id="canvas" width="720" height="480"></canvas>
+    <div id="mobileControls" class="mobile-controls" hidden aria-label="Mobile Spielsteuerung">
+      <div class="mobile-control-group">
+        <button class="mobile-control-button" type="button" data-key="LEFT" aria-label="Nach links"></button>
+        <button class="mobile-control-button" type="button" data-key="RIGHT" aria-label="Nach rechts"></button>
+      </div>
+      <div class="mobile-control-group">
+        <button class="mobile-control-button" type="button" data-key="SPACE" aria-label="Springen"></button>
+        <button class="mobile-control-button mobile-throw-button" type="button" data-key="D"
+          aria-label="Flasche werfen"></button>
+      </div>
+    </div>
     <div id="startGameControls" class="start-game-controls" hidden>
       <button class="game-action-button" type="button" onclick="startGame()">
         <span class="game-action-icon door-icon"></span>
@@ -60,15 +78,18 @@
       <button class="quick-menu-button" type="button" onclick="openControls()">Controls</button>
     </div>
     <div class="audio-controls">
+      <button id="pauseGameButton" class="menu-icon-button game-pause-button" type="button"
+        onclick="toggleGamePause()" aria-label="Spiel pausieren" title="Spiel pausieren" hidden></button>
       <div class="audio-menu-control">
-        <button id="audioMenuButton" class="menu-icon-button audio-menu-button" type="button" onclick="toggleAudioMenu()"
-          aria-label="Menü öffnen" aria-expanded="false" title="Menü öffnen"></button>
+        <button id="audioMenuButton" class="menu-icon-button audio-menu-button" type="button"
+          onclick="toggleAudioMenu()" aria-label="Menü öffnen" aria-expanded="false" title="Menü öffnen"></button>
         <div id="audioMenuDropdown" class="audio-menu-dropdown" hidden>
           <button id="soundEffectsButton" class="menu-icon-button sound-effects-button is-enabled" type="button"
             onclick="toggleSoundEffects()" aria-label="Soundeffekte ausschalten" aria-pressed="true"
             title="Soundeffekte ausschalten"></button>
-          <button id="musicButton" class="menu-icon-button music-button is-enabled" type="button" onclick="toggleMusic()"
-            aria-label="Soundtrack ausschalten" aria-pressed="true" title="Soundtrack ausschalten"></button>
+          <button id="musicButton" class="menu-icon-button music-button is-enabled" type="button"
+            onclick="toggleMusic()" aria-label="Soundtrack ausschalten" aria-pressed="true"
+            title="Soundtrack ausschalten"></button>
         </div>
       </div>
     </div>
@@ -83,8 +104,13 @@
             "Wooden and gold buttons for ui game"</p>
           <p class="credits-author">by upklyak | Designed by Magnific</p>
           <a href="https://www.magnific.com" target="_blank" rel="noopener noreferrer">www.magnific.com</a>
+          <p class="credits-assets credits-asset-separator">
+            Rotate Phone by Kelig Le Luron from</p> <a href="https://thenounproject.com/browse/icons/term/rotate-phone/"
+            target="_blank" title="Rotate Phone Icons">Noun Project</a>
+          <p class="credits-assets">(CC BY 3.0)</p>
         </div>
-      </section>
+    </div>
+    </section>
     </div>
     <div id="controlsOverlay" class="menu-overlay" hidden>
       <section class="menu-panel" role="dialog" aria-modal="true" aria-label="Controls">

@@ -4,7 +4,7 @@ class Cloud extends MovableObject {
      * @param {number} [x] - Optional horizontal starting position.
      */
     constructor(x = Math.random() * 500) {
-        super().loadImage("img/5_background/layers/4_clouds/1.png");
+        super().loadImage("img/game/5_background/layers/4_clouds/1.png");
 
         this.x = x;
         this.y = 5 + Math.random() * 100;

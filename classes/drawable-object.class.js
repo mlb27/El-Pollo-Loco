@@ -13,8 +13,7 @@ class DrawableObject {
      * @param {string} path - Path to the image file.
      */
     loadImage(path) {
-        this.img = new Image();
-        this.img.src = path;
+        this.img = assetLoader.getImage(path);
     }
 
     /**
@@ -23,9 +22,7 @@ class DrawableObject {
      */
     loadImages(arr) {
         arr.forEach((path) => {
-            let img = new Image();
-            img.src = path;
-            this.imageCache[path] = img;
+            this.imageCache[path] = assetLoader.getImage(path);
         });
     }
 
